@@ -147,9 +147,8 @@ _NOTICE = (
 
 _ABOUT = (
     "Aperiodic Factors publishes a catalog of cross-sectional, market-neutral crypto "
-    "factors — each with point-in-time history and live signals — designed "
-    "to be combined into multi-factor portfolios that diversify away "
-    "single-factor risk. Full catalog, methodology and API at "
+    "factors — each with point-in-time history and live signals — built for "
+    "systematic research and backtesting. Full catalog, methodology and API at "
     "factors.aperiodic.io; see the materials below."
 )
 

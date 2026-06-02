@@ -16,7 +16,7 @@ BOOKING_URL = f"{SITE_BASE_URL}/booking"
 GITHUB_BLOB_BASE = "https://github.com/aperiodic-factors/dataroom/blob/main"
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/aperiodic-factors/dataroom/main"
 # Factors without a committed factor_analysis_<id>.ipynb fall back to this.
-_GENERIC_NOTEBOOK = "notebooks/00_replicate_portfolio_backtest.ipynb"
+_GENERIC_NOTEBOOK = "notebooks/00_factor_returns_correlation.ipynb"
 
 # Excluded from all generation (CSV export + factsheets).
 _EXCLUDED_IDS: frozenset[str] = frozenset({"trend_longonly_adaptive"})
@@ -51,12 +51,14 @@ class Factor:
 
     @property
     def has_factor_notebook(self) -> bool:
-        return (REPO_ROOT / f"factor_analysis_{self.id}.ipynb").exists()
+        return (
+            REPO_ROOT / "notebooks" / f"factor_analysis_{self.id}.ipynb"
+        ).exists()
 
     @property
     def notebook_url(self) -> str:
         name = (
-            f"factor_analysis_{self.id}.ipynb"
+            f"notebooks/factor_analysis_{self.id}.ipynb"
             if self.has_factor_notebook
             else _GENERIC_NOTEBOOK
         )
