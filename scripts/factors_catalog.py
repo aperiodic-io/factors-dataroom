@@ -13,8 +13,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SITE_BASE_URL = "https://factors.aperiodic.io"
 BOOKING_URL = f"{SITE_BASE_URL}/booking"
 
-GITHUB_BLOB_BASE = "https://github.com/aperiodic-factors/dataroom/blob/main"
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/aperiodic-factors/dataroom/main"
+GITHUB_BLOB_BASE = "https://github.com/aperiodic-io/dataroom/blob/main"
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/aperiodic-io/dataroom/main"
 # Factors without a committed factor_analysis_<id>.ipynb fall back to this.
 _GENERIC_NOTEBOOK = "notebooks/00_factor_returns_correlation.ipynb"
 
