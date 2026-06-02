@@ -2,8 +2,7 @@
 
 The [Aperiodic Factors](https://factors.aperiodic.io) data room: per-factor PDF
 factsheets, the underlying raw factor data and portfolio returns as CSVs,
-and transparent, runnable notebooks for per-factor AlphaLens analysis,
-multi-factor portfolio construction, backtesting, and live weights.
+and transparent, runnable notebooks for per-factor AlphaLens analysis.
 
 ## Factor Analysis Notebooks
 
@@ -16,8 +15,8 @@ open it in Jupyter, e.g.
 `jupyter notebook notebooks/factor_analysis_altair.ipynb`.
 
 **Start here — [cross-factor returns correlation](notebooks/00_factor_returns_correlation.ipynb):**
-a correlation heatmap across every portfolio returns. These were created from the raw factor data and show how you can construct a cross-sectional portfolio out of them. 
-The factors are meant to be combined into multi-factor portfolios, see how you can do that here: [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb)
+a correlation heatmap across every factor's portfolio returns, computed from the
+raw factor data — a quick read on how the individual factors relate to one another.
 
 Each factor links to its detail page on our site, a PDF factsheet, the
 AlphaLens notebook, and the underlying data (returns and raw factor data):
@@ -40,21 +39,6 @@ AlphaLens notebook, and the underlying data (returns and raw factor data):
 | [Open Interest Divergence](https://factors.aperiodic.io/portfolio/open_interest_divergence.40?exchange=unconstrained) | [PDF](factsheets/open_interest_divergence.pdf) | [notebook](notebooks/factor_analysis_open_interest_divergence.ipynb) | [CSV](https://raw.githubusercontent.com/aperiodic-factors/dataroom/main/data/raw-factors/open_interest_divergence.csv) | [CSV](https://raw.githubusercontent.com/aperiodic-factors/dataroom/main/data/portfolio-40-returns/open_interest_divergence.csv) |
 | [Momentum](https://factors.aperiodic.io/portfolio/momentum.40?exchange=unconstrained) | [PDF](factsheets/momentum.pdf) | [notebook](notebooks/factor_analysis_momentum.ipynb) | [CSV](https://raw.githubusercontent.com/aperiodic-factors/dataroom/main/data/raw-factors/momentum.csv) | [CSV](https://raw.githubusercontent.com/aperiodic-factors/dataroom/main/data/portfolio-40-returns/momentum.csv) |
 <!-- END FACTOR TABLE -->
-
-
-## Portfolio Notebooks
-
-End-to-end portfolio examples. Each notebook is committed pre-rendered, so
-GitHub displays it in your browser — just click a **Notebook** link. To run
-or modify one, complete [Setup](#run-the-notebooks-setup) then open it in Jupyter, e.g.
-`jupyter notebook notebooks/00_replicate_portfolio_backtest.ipynb`.
-
-| Notebook | Source | Description |
-| --- | --- | --- |
-| [Adaptive Portfolios](notebooks/00_adaptive-portfolios.ipynb) | — | Replicate Aperiodic Factors’ risk-targeted Adaptive portfolios through the Aperiodic Factors API |
-| [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb) | — | Combine several single-factor portfolios into one diversified multi-factor allocation |
-| [Replicate Portfolio Backtest](notebooks/00_replicate_portfolio_backtest.ipynb) | [.py](notebooks/src/00_replicate_portfolio_backtest.py) | Transparent backtest with transaction costs against a portfolio's historical weights |
-| [Get Live Weights](notebooks/00_get_live_weights.ipynb) | [.py](notebooks/src/00_get_live_weights.py) | Fetch a portfolio's current live allocations from the Aperiodic Factors API |
 
 ## Catalog
 
