@@ -9,6 +9,10 @@ on:
   push:
     branches:
       - main
+      # TEMPORARY: regenerate + commit notebooks on the feature branch on every
+      # push so the artefacts exist before merge. Remove once feature/aperiodic
+      # is merged to main.
+      - feature/aperiodic
 
 permissions:
   contents: write
