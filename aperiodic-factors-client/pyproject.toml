@@ -1,0 +1,100 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "aperiodic-factors-client"
+version = "0.1.0"
+authors = [
+  { name = "Aperiodic Factors" },
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: Other/Proprietary License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "numpy>=1.3.0",
+  "pandas>=2.0.0",
+  "requests>=2.25.0",
+]
+description = "Client for the Aperiodic Factors API (factors.aperiodic.io): cross-sectional crypto factors, portfolios and risk signals"
+keywords = ["quant", "api", "market-neutral", "risk", "backtesting", "portfolio", "factors"]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+quality = [
+  "ruff==0.1.11",
+  "pre-commit~=2.20.0",
+]
+tests = [
+  "pytest~=7.1.2",
+  "pytest-cov>=4.0",
+  "hypothesis~=6.112.4",
+  "python-dotenv>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aperiodic"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/docs",
+  "/.gitignore",
+  "/tests",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = ["RUF200", "DTZ011", "PGH003", "COM812", "ISC001", "PD101", "C408", "DTZ005", "E501", "PLR2004", "PLR0913", "B904", "N803", "ARG001", "ARG002", "PD010", "N806", "I001", "TID252", "N802", "A002", "PD011", "PGH004", "N818", "PLR0911", "PT011", "PD003", "DTZ001", "INP001", "N815", "A003"]
+
+select = [
+  "F",
+  "E",
+  "W",
+  "I",
+  "N",
+  "UP",
+  "BLE",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  "DTZ",
+  "T10",
+  "ISC",
+  "ICN",
+  "INP",
+  "PIE",
+  "PT",
+  "Q",
+  "RET",
+  "RSE",
+  "SIM",
+  "TID",
+  "ARG",
+  "PD",
+  "PGH",
+  "PLE",
+  "PLR",
+  "PLW",
+  "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E", "F", "I", "N", "F403"]
