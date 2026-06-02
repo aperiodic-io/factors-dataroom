@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import pandas as pd
+import requests
+
+from ..constants import BASEAPI, get_headers
+from ..decorators import retry_on_error
+
+
+@retry_on_error(num_trials=3, wait=2.0)
+def get_live_weights(
+    id: str,
+    api_key: str,
+    smoothing: str | None = None,
+    exchange: str | None = None,
+    as_of: str | None = None,
+) -> pd.Series:
+    """
+    Fetch last value of normalized risk signal data from the Aperiodic Factors API.
+
+    Args:
+        id (str): Portfolio Identifier (eg. momentum.20)
+        api_key (str): The API key to use for the request
+        smoothing (str | None): Portfolio smoothing window for the data. Portfolio smoothing window for the data. Valid values and default smoothing for each portfolio can be found in the [Aperiodic Factors Catalog](https://factors.aperiodic.io/home/api/catalog)
+        exchange (str | None): Exchange constraint for portfolio data. Valid options are found in the [Aperiodic Factors Catalog](https://factors.aperiodic.io/home/api/catalog)
+        as_of (str | None): Point in time for the data. Valid options are 'close' or 'latest'.
+    Returns:
+        pd.Series: Current weights of the portfolio
+    """
+    url = f"{BASEAPI}/portfolio/live-weights"
+    params = {"portfolio": id}
+
+    if smoothing is not None:
+        params["smoothing"] = smoothing
+    if exchange is not None:
+        params["exchange"] = exchange
+    if as_of is not None:
+        params["as_of"] = as_of
+
+    headers = get_headers(api_key)
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+
+    response = response.json()
+    series = pd.Series(response["data"], index=response["columns"])
+    if response.get("index"):
+        series = series.rename(response["index"])
+    # Ensure we have a valid Series before calling astype
+    if isinstance(series, pd.Series):
+        return series.astype(float)
+    return pd.Series(response["data"], index=response["columns"]).astype(float)

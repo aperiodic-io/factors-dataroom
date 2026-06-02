@@ -1,4 +1,6 @@
-aperiodic
+# Vendored Aperiodic Factors API client (see ./aperiodic-factors-client).
+# Provides the importable `aperiodic` package; not published to PyPI.
+./aperiodic-factors-client
 matplotlib
 pandas
 numpy
