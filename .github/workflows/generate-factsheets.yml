@@ -19,10 +19,6 @@ on:
   push:
     branches:
       - main
-      # TEMPORARY: export CSVs + render factsheets and commit them on the
-      # feature branch on every push so the artefacts exist before merge.
-      # Remove once feature/aperiodic is merged to main.
-      - feature/aperiodic
 
 permissions:
   contents: write
@@ -39,13 +35,6 @@ jobs:
     timeout-minutes: 60
     env:
       APERIODIC_API_KEY: ${{ secrets.APERIODIC_API_KEY }}
-      # TEMPORARY: generate against staging instead of prod. Remove to fall
-      # back to the client default (https://factors.aperiodic.io).
-      APERIODIC_BASE_URL: https://staging.factors.aperiodic.io
-      # Forwarded only if staging sits behind Cloudflare Access; the client
-      # ignores them unless both are set.
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
     steps:
       # Pinned to v5: actions/checkout@v6 breaks the create-pull-request
