@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - feature/aperiodic # temporary: regenerate on each push; remove after merge
 
 permissions:
   contents: write
@@ -84,7 +85,14 @@ jobs:
 
           Branch: ${GITHUB_REF_NAME}
           Triggered by: ${GITHUB_ACTOR}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          # A concurrent run (e.g. the factsheets workflow) may push first; rebase and retry.
+          for attempt in 1 2 3 4 5; do
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          done
+          exit 1
 
       - name: Open PR with refreshed notebooks
         if: ${{ success() && (github.event_name != 'push' || github.ref_name == 'main') }}
