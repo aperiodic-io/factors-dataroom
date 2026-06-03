@@ -26,6 +26,9 @@ jobs:
     timeout-minutes: 120
     env:
       APERIODIC_API_KEY: ${{ secrets.APERIODIC_API_KEY }}
+      APERIODIC_BASE_URL: https://staging.factors.aperiodic.io # temporary: testing
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       NOTEBOOK_JOBS: '4'
 
     steps:
