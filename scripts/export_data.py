@@ -16,11 +16,16 @@ from pathlib import Path
 import pandas as pd
 from aperiodic import (
     get_portfolio_factors_historical,
-    get_portfolio_returns,
     get_tickers,
 )
 
-from scripts._common import UnknownFactors, get_api_key, job_count, select_factors
+from scripts._common import (
+    UnknownFactors,
+    get_api_key,
+    get_unlevered_portfolio_returns,
+    job_count,
+    select_factors,
+)
 from scripts.factors_catalog import Factor
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -53,8 +58,11 @@ def _embargo_recent(factor_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def export_returns(factor: Factor, api_key: str) -> Path:
-    """Save the unconstrained .40 portfolio's daily returns as a CSV."""
-    returns: pd.Series = get_portfolio_returns(
+    """Save the unconstrained .40 portfolio's daily returns as a CSV.
+
+    Returns are unlevered to 1x — the backend reports them at 2x (200%
+    gross exposure); see scripts._common.BACKEND_LEVERAGE."""
+    returns: pd.Series = get_unlevered_portfolio_returns(
         id=factor.portfolio_id, api_key=api_key
     )
     returns = returns.dropna()

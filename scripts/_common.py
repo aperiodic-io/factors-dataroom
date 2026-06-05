@@ -3,8 +3,28 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from scripts.factors_catalog import Factor, load_factors
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+# The Aperiodic Factors backend reports portfolio returns at 2x leverage
+# (200% gross exposure — 100% long / 100% short). The data room publishes
+# unlevered, 1x returns, so every return series fetched from the API is
+# divided by this factor before it is exported to CSV or charted on a
+# factsheet. Keeping the adjustment here gives it a single source of truth.
+BACKEND_LEVERAGE = 2.0
+
+
+def get_unlevered_portfolio_returns(*, id: str, api_key: str) -> "pd.Series":
+    """Fetch a portfolio's daily returns and rescale them from the backend's
+    2x leverage down to 1x (see ``BACKEND_LEVERAGE``)."""
+    from aperiodic import get_portfolio_returns
+
+    return get_portfolio_returns(id=id, api_key=api_key) / BACKEND_LEVERAGE
 
 
 def get_api_key() -> str:
