@@ -24,13 +24,13 @@ from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
 from aperiodic import (  # noqa: E402
     get_historical_universe,
     get_portfolio_factors_historical,
-    get_portfolio_returns,
     get_prices,
 )
 
 from scripts._common import (  # noqa: E402
     UnknownFactors,
     get_api_key,
+    get_unlevered_portfolio_returns,
     job_count,
     select_factors,
 )
@@ -55,7 +55,11 @@ def _fetch_factor_inputs(
     universe (point-in-time, no look-ahead)."""
     template_id = factor.portfolio_id.split(".")[0]
 
-    returns = get_portfolio_returns(id=factor.portfolio_id, api_key=api_key)
+    # Unlever to 1x — the backend reports returns at 2x (200% gross
+    # exposure). See scripts._common.BACKEND_LEVERAGE.
+    returns = get_unlevered_portfolio_returns(
+        id=factor.portfolio_id, api_key=api_key
+    )
     returns = returns.dropna()
     returns.index = pd.to_datetime(returns.index)
     start_date = returns.index.min().strftime("%Y-%m-%d")
