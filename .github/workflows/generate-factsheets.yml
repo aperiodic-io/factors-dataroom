@@ -84,6 +84,7 @@ jobs:
         run: |
           echo "Returns:"; ls -lh data/portfolio-40-returns || true
           echo; echo "Factor data:"; ls -lh data/raw-factors || true
+          echo; echo "Factor analysis:"; ls -lh data/factor-analysis || true
           echo; echo "Factsheets:"; ls -lh factsheets || true
           echo; echo "Previews:"; ls -lh notebooks/preview || true
 
@@ -94,12 +95,13 @@ jobs:
           path: |
             data/portfolio-40-returns
             data/raw-factors
+            data/factor-analysis
             factsheets
             notebooks/preview
           if-no-files-found: error
 
       - name: Commit refreshed data back to the branch
-        if: ${{ github.event_name == 'push' && github.ref_name != 'main' && github.event.inputs.skip_commit != 'true' }}
+        if: ${{ github.ref_name != 'main' && github.event.inputs.skip_commit != 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -124,7 +126,7 @@ jobs:
           exit 1
 
       - name: Open PR with refreshed data
-        if: ${{ (github.event_name != 'push' || github.ref_name == 'main') && github.event.inputs.skip_commit != 'true' }}
+        if: ${{ github.ref_name == 'main' && github.event.inputs.skip_commit != 'true' }}
         uses: peter-evans/create-pull-request@v6
         with:
           base: main
