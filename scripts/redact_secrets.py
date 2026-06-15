@@ -29,7 +29,7 @@ PLACEHOLDER = "***REDACTED***"
 MIN_LEN = 8  # ignore trivially short / empty values so we never over-redact
 
 
-def _collect_secrets() -> list[str]:
+def collect_secrets() -> list[str]:
     secrets: list[str] = []
     for var in SECRET_ENV_VARS:
         val = os.environ.get(var, "")
@@ -78,14 +78,20 @@ def redact_file(path: str, secrets: list[str]) -> int:
     return n
 
 
-def main(argv: list[str]) -> int:
-    secrets = _collect_secrets()
+def redact_paths(paths: list[str]) -> int:
+    """Redact configured secrets across several notebooks; return the total.
+
+    Safe to call from anywhere that generates notebooks -- CI steps, the factor
+    notebook generator, ad-hoc scripts. A no-op when no secrets are set in the
+    environment, and it never echoes secret values.
+    """
+    secrets = collect_secrets()
     if not secrets:
         print("redact_secrets: no secrets configured in the environment; nothing to do.")
         return 0
 
     total = 0
-    for path in argv:
+    for path in paths:
         n = redact_file(path, secrets)
         if n:
             print(f"redact_secrets: redacted {n} occurrence(s) in {path}")
@@ -96,6 +102,11 @@ def main(argv: list[str]) -> int:
         print(f"::warning::redact_secrets removed {total} secret occurrence(s) from notebooks")
     else:
         print("redact_secrets: no secret occurrences found.")
+    return total
+
+
+def main(argv: list[str]) -> int:
+    redact_paths(argv)
     return 0
 
 
