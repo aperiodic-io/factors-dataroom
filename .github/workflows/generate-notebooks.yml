@@ -67,6 +67,10 @@ jobs:
             --ExecutePreprocessor.timeout=1800 \
             notebooks/00_multi_factor_portfolio_construction.ipynb
 
+      - name: Redact any leaked secrets from notebooks
+        if: always()
+        run: python -m scripts.redact_secrets notebooks/*.ipynb
+
       - name: Upload notebooks artefact
         if: always()
         uses: actions/upload-artifact@v4
