@@ -16,6 +16,12 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+  # Temporary: run on PR updates so factsheet-rendering changes can be
+  # reviewed from the uploaded artefacts on each commit.
+  pull_request:
+    branches:
+      - main
+
   push:
     branches:
       - main
@@ -124,7 +130,12 @@ jobs:
           exit 1
 
       - name: Open PR with refreshed data
-        if: ${{ (github.event_name != 'push' || github.ref_name == 'main') && github.event.inputs.skip_commit != 'true' }}
+        if: >-
+          ${{
+            github.event_name != 'pull_request' &&
+            (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_commit != 'true') &&
+            (github.event_name != 'push' || github.ref_name == 'main')
+          }}
         uses: peter-evans/create-pull-request@v6
         with:
           base: main

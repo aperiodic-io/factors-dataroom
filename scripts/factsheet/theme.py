@@ -31,6 +31,24 @@ MINUS = "−"  # U+2212, digit-width minus for numeric formatting
 
 _BUNDLED_FONT_DIR = Path(__file__).resolve().parent / "assets" / "fonts"
 
+# Factsheet typography scale.
+#
+# Keep the PDF on one sans family and a deliberately small set of sizes so
+# headings, labels, captions, buttons and chart text read as one system instead
+# of a mix of display/body cuts and ad-hoc point sizes.
+FONT_BODY = 8.0
+FONT_BODY_SMALL = 7.0
+FONT_CAPTION = 6.5
+FONT_FINE = 5.8
+FONT_SECTION = 7.5
+FONT_TITLE = 22.0
+FONT_TITLE_MIN = 16.0
+FONT_SUBTITLE = 9.0
+FONT_BRAND = 10.0
+FONT_WEIGHT_REGULAR = "regular"
+FONT_WEIGHT_MEDIUM = "medium"
+FONT_WEIGHT_SEMIBOLD = "semibold"
+
 
 def _refresh_font_cache_once() -> None:
     """Register the bundled Mona Sans .ttf/.otf cuts and rescan. Idempotent."""
@@ -55,10 +73,7 @@ def _pick_sans() -> tuple[str, str]:
     _refresh_font_cache_once()
     available = {f.name for f in font_manager.fontManager.ttflist}
     if "Mona Sans" in available:
-        display = "Mona Sans Expanded" if "Mona Sans Expanded" in available else "Mona Sans"
-        return "Mona Sans", display
-    if "Inter Display" in available and "Inter" in available:
-        return "Inter", "Inter Display"
+        return "Mona Sans", "Mona Sans"
     if "Inter" in available:
         return "Inter", "Inter"
     return "DejaVu Sans", "DejaVu Sans"
@@ -70,10 +85,11 @@ def apply_theme() -> None:
         {
             "font.family": "sans-serif",
             "font.sans-serif": [body, "Inter", "DejaVu Sans"],
-            "font.size": 9.5,
-            "axes.titlesize": 10,
-            "axes.titleweight": "semibold",
-            "axes.labelsize": 8,
+            "font.size": FONT_BODY,
+            "font.weight": FONT_WEIGHT_REGULAR,
+            "axes.titlesize": FONT_BODY,
+            "axes.titleweight": FONT_WEIGHT_SEMIBOLD,
+            "axes.labelsize": FONT_BODY_SMALL,
             "axes.labelcolor": SUB_INK,
             "axes.edgecolor": HAIR,
             "axes.linewidth": 0.6,
@@ -81,15 +97,15 @@ def apply_theme() -> None:
             "axes.spines.right": False,
             "xtick.color": MUTED,
             "ytick.color": MUTED,
-            "xtick.labelsize": 7.5,
-            "ytick.labelsize": 7.5,
+            "xtick.labelsize": FONT_CAPTION,
+            "ytick.labelsize": FONT_CAPTION,
             "xtick.direction": "out",
             "ytick.direction": "out",
             "grid.color": HAIR,
             "grid.linewidth": 0.5,
             "grid.linestyle": "-",
             "legend.frameon": False,
-            "legend.fontsize": 8,
+            "legend.fontsize": FONT_BODY_SMALL,
             "figure.facecolor": BG,
             "axes.facecolor": BG,
             "savefig.facecolor": BG,
