@@ -1,21 +1,14 @@
 """Single-factor portfolio catalog for the data-room CSV/PDF exports.
 
 The factor list and ALL narrative copy are sourced from the published catalog
-bundle (`catalog.json`), which is the single source of truth maintained by the
-Aperiodic web app. Nothing here is hand-maintained — if the catalog cannot be
-loaded the run fails loudly rather than falling back to stale/local copy.
-
-Source resolution (in priority order):
-  1. `APERIODIC_FACTORS_CATALOG_FILE` — read a local JSON file (used for tests
-     and sandboxed CI where egress is blocked).
-  2. `APERIODIC_FACTORS_CATALOG_URL` — fetch from a custom URL.
-  3. The default published URL (`https://factors.aperiodic.io/catalog.json`).
+bundle at `https://factors.aperiodic.io/catalog.json`, which is the single
+source of truth maintained by the Aperiodic web app. There is no override and
+nothing here is hand-maintained — if the catalog cannot be fetched the run
+fails loudly rather than falling back to any local/stale copy.
 """
 
 from __future__ import annotations
 
-import json
-import os
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -31,7 +24,7 @@ GITHUB_RAW_BASE = "https://raw.githubusercontent.com/aperiodic-io/dataroom/main"
 # Factors without a committed factor_analysis_<id>.ipynb fall back to this.
 _GENERIC_NOTEBOOK = "notebooks/00_factor_returns_correlation.ipynb"
 
-DEFAULT_CATALOG_URL = f"{SITE_BASE_URL}/catalog.json"
+CATALOG_URL = f"{SITE_BASE_URL}/catalog.json"
 _CATALOG_FETCH_TIMEOUT = 30
 
 
@@ -77,27 +70,15 @@ class Factor:
 
 
 def _read_catalog_bundle() -> dict:
-    """Load the raw catalog bundle from the configured local file or URL."""
-    local_file = os.environ.get("APERIODIC_FACTORS_CATALOG_FILE")
-
-    if local_file:
-        path = Path(local_file)
-        try:
-            return json.loads(path.read_text())
-        except (OSError, ValueError) as exc:
-            raise RuntimeError(
-                f"Failed to read factors catalog file at {path}: {exc}"
-            ) from exc
-
-    url = os.environ.get("APERIODIC_FACTORS_CATALOG_URL", DEFAULT_CATALOG_URL)
-
+    """Fetch the raw catalog bundle from the published URL — the single source
+    of truth, with no override."""
     try:
-        response = requests.get(url, timeout=_CATALOG_FETCH_TIMEOUT)
+        response = requests.get(CATALOG_URL, timeout=_CATALOG_FETCH_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except (requests.RequestException, ValueError) as exc:
         raise RuntimeError(
-            f"Failed to fetch factors catalog from {url}: {exc}"
+            f"Failed to fetch factors catalog from {CATALOG_URL}: {exc}"
         ) from exc
 
 
