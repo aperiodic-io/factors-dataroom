@@ -8,6 +8,7 @@ name: Render Multi-Factor Notebook
 # dedicated step in generate-notebooks.yml.)
 
 on:
+  workflow_dispatch:
   push:
     branches-ignore:
       - main
