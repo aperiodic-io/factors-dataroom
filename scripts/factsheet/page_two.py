@@ -45,7 +45,7 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
         RIGHT_X,
         0.960,
         f"{_date.today():%b %Y}    ·    {page} / 2",
-        fontsize=8,
+        fontsize=theme.FONT_BODY,
         color=theme.MUTED,
         ha="right",
         va="center",
@@ -56,16 +56,14 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
         )
     )
 
-    # Title block. "Factor Analysis" reads as a section subtitle here — the
-    # document title is the factor name (big on page 1, top-right here) — so
-    # it's set smaller than page 1's hero, which also frees vertical height
-    # for the charts below.
+    # Title block — match page 1's reduced title scale so the two pages
+    # share one typographic hierarchy.
     title = fig.text(
         MARGIN_X,
         0.920,
         "Factor Analysis",
-        fontsize=22,
-        fontweight="bold",
+        fontsize=theme.FONT_TITLE,
+        fontweight=theme.FONT_WEIGHT_SEMIBOLD,
         color=theme.INK,
         va="top",
         family=theme.display_font(),
@@ -90,7 +88,7 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
         factor.factor_data_csv_url,
         primary=False,
         height=csv_btn_h,
-        fontsize=7.5,
+        fontsize=theme.FONT_SECTION,
     )
     _render_justified_block(
         fig,
@@ -106,7 +104,7 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
             "universe (the live factor spans many more tokens — see the "
             "raw factor-data CSV in the data room)."
         ),
-        fontsize=9.5,
+        fontsize=theme.FONT_SUBTITLE,
         color=theme.SUB_INK,
         linespacing=1.5,
         wrap_chars=116,
@@ -162,9 +160,9 @@ def _section_rule(fig: plt.Figure, y_top: float, label: str) -> None:
         MARGIN_X,
         y_top,
         label,
-        fontsize=8,
+        fontsize=theme.FONT_BODY,
         color=theme.INK,
-        weight="semibold",
+        weight=theme.FONT_WEIGHT_SEMIBOLD,
         va="top",
     )
     fig.add_artist(
@@ -194,7 +192,7 @@ def _draw_about_and_notice(fig: plt.Figure, factor: Factor) -> None:
         y_top=notice_body_top,
         column_width_frac=COL_WIDTH,
         text=_NOTICE,
-        fontsize=5.8,
+        fontsize=theme.FONT_FINE,
         color=theme.MUTED,
         linespacing=1.42,
         wrap_chars=164,
@@ -224,7 +222,7 @@ def _draw_about_and_notice(fig: plt.Figure, factor: Factor) -> None:
         MARGIN_X,
         about_body_top,
         textwrap.fill(_ABOUT, width=_ABOUT_WRAP),
-        fontsize=7.5,
+        fontsize=theme.FONT_SECTION,
         color=theme.SUB_INK,
         va="top",
         linespacing=1.45,
@@ -257,9 +255,9 @@ def _draw_about_and_notice(fig: plt.Figure, factor: Factor) -> None:
         MARGIN_X,
         contact_top,
         contact_text,
-        fontsize=7.5,
+        fontsize=theme.FONT_SECTION,
         color=theme.ACCENT,
-        weight="semibold",
+        weight=theme.FONT_WEIGHT_SEMIBOLD,
         va="top",
     )
     contact.set_url(BOOKING_URL)
@@ -365,7 +363,7 @@ def _plot_mean_return_by_quantile(ax: plt.Axes, clean: pd.DataFrame) -> None:
     )
     ax.set_xlabel("Quantile  (1 = lowest factor value, 5 = highest)")
     ax.set_ylabel("Mean Return (bps)")
-    ax.legend(loc="upper left", fontsize=7, ncol=n_p)
+    ax.legend(loc="upper left", fontsize=theme.FONT_BODY_SMALL, ncol=n_p)
     ax.grid(axis="y", linewidth=0.4, alpha=0.6)
     _strip_top_right(ax)
 
@@ -417,7 +415,7 @@ def _plot_ic_with_stats(ax: plt.Axes, clean: pd.DataFrame) -> None:
     pad = max((hi - lo) * 0.12, 0.005)
     ax.set_ylim(lo - pad, hi + pad)
     ax.grid(axis="y", linewidth=0.4, alpha=0.6)
-    ax.legend(loc="upper right", fontsize=7)
+    ax.legend(loc="upper right", fontsize=theme.FONT_BODY_SMALL)
     _strip_top_right(ax)
     _set_year_ticks(ax)
 
@@ -438,7 +436,7 @@ def _plot_ic_with_stats(ax: plt.Axes, clean: pd.DataFrame) -> None:
         1.02,
         stats_line,
         transform=ax.transAxes,
-        fontsize=8,
+        fontsize=theme.FONT_BODY,
         color=theme.SUB_INK,
         va="bottom",
         ha="left",
@@ -495,7 +493,7 @@ def _plot_cumulative_quantile_returns(ax: plt.Axes, clean: pd.DataFrame) -> None
     )
     ax.set_ylabel("Growth of 1.00  (log scale)")
     ax.grid(axis="y", linewidth=0.4, alpha=0.6)
-    ax.legend(loc="upper left", ncol=len(cum.columns), fontsize=7, columnspacing=1.2)
+    ax.legend(loc="upper left", ncol=len(cum.columns), fontsize=theme.FONT_BODY_SMALL, columnspacing=1.2)
     _strip_top_right(ax)
     _set_year_ticks(ax)
 
@@ -507,7 +505,7 @@ def _empty_quant_page(factor: Factor, reason: str) -> plt.Figure:
         0.5,
         0.5,
         f"Quantitative analysis unavailable\n\n{reason}",
-        fontsize=11,
+        fontsize=theme.FONT_SUBTITLE,
         color=theme.MUTED,
         ha="center",
         va="center",
@@ -557,7 +555,7 @@ def render_page_two(
                 f"{label} unavailable: {exc}",
                 ha="center",
                 va="center",
-                fontsize=8,
+                fontsize=theme.FONT_BODY,
                 color=theme.MUTED,
             )
 

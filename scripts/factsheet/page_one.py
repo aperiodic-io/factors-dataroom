@@ -65,7 +65,7 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
         RIGHT_X,
         0.960,
         f"{_date.today():%b %Y}    ·    {page} / 2",
-        fontsize=8,
+        fontsize=theme.FONT_BODY,
         color=theme.MUTED,
         ha="right",
         va="center",
@@ -95,12 +95,12 @@ _CHART_LEFT = MARGIN_X + 0.55 * COL_WIDTH
 _TITLE_RIGHT_LIMIT = _CHART_LEFT - 0.06
 _TITLE_X = MARGIN_X - 0.001
 _TITLE_TOP = 0.908
-_TITLE_BASE = 36.0
+_TITLE_BASE = theme.FONT_TITLE
 # Shrink a single-line title down to this; if it would need to go smaller,
 # wrap to two lines instead (a 2-word name set big over two lines reads as
 # a stronger hero than one cramped small line). Hard floor for a wrapped line.
-_TITLE_SINGLE_MIN = 24.0
-_TITLE_HARD_MIN = 16.0
+_TITLE_SINGLE_MIN = theme.FONT_TITLE_MIN
+_TITLE_HARD_MIN = theme.FONT_TITLE_MIN - 4.0
 
 
 def _balanced_two_lines(name: str) -> str:
@@ -124,7 +124,7 @@ def _draw_title(fig: plt.Figure, factor: Factor, right_limit: float) -> float:
     title block's bottom edge (figure fraction)."""
     budget = right_limit - _TITLE_X
     kw = dict(
-        fontweight="bold",
+        fontweight=theme.FONT_WEIGHT_SEMIBOLD,
         color=theme.INK,
         va="top",
         family=theme.display_font(),
@@ -170,7 +170,7 @@ def _draw_hero(
         MARGIN_X,
         subtitle_top,
         _wrap(subtitle, width=52),
-        fontsize=11,
+        fontsize=theme.FONT_SUBTITLE,
         color=theme.SUB_INK,
         va="top",
         linespacing=1.4,
@@ -209,9 +209,9 @@ def _draw_top_right_quantile_bars(fig: plt.Figure, clean: pd.DataFrame) -> None:
         spark_left,
         spark_bottom + spark_h + 0.008,
         "MEAN FORWARD RETURN BY QUANTILE  ·  1D (BPS)",
-        fontsize=6.5,
+        fontsize=theme.FONT_CAPTION,
         color=theme.MUTED,
-        weight="semibold",
+        weight=theme.FONT_WEIGHT_SEMIBOLD,
         ha="left",
         va="bottom",
     )
@@ -271,7 +271,7 @@ def _draw_overview(fig: plt.Figure, factor: Factor, y_top: float) -> None:
         y_top=y_top,
         column_width_frac=col_w,
         text=left_text,
-        fontsize=8.5,
+        fontsize=theme.FONT_BODY,
         color=theme.SUB_INK,
         linespacing=1.55,
         wrap_chars=OVERVIEW_COL_CH,
@@ -282,7 +282,7 @@ def _draw_overview(fig: plt.Figure, factor: Factor, y_top: float) -> None:
         y_top=y_top,
         column_width_frac=col_w,
         text=right_text,
-        fontsize=8.5,
+        fontsize=theme.FONT_BODY,
         color=theme.SUB_INK,
         linespacing=1.55,
         wrap_chars=OVERVIEW_COL_CH,
@@ -311,9 +311,9 @@ def _draw_section_eyebrow(
         MARGIN_X,
         y,
         label.upper(),
-        fontsize=8,
+        fontsize=theme.FONT_BODY,
         color=theme.INK,
-        weight="semibold",
+        weight=theme.FONT_WEIGHT_SEMIBOLD,
         va="top",
     )
     if right_label:
@@ -321,7 +321,7 @@ def _draw_section_eyebrow(
             RIGHT_X,
             y,
             right_label,
-            fontsize=8,
+            fontsize=theme.FONT_BODY,
             color=theme.MUTED,
             va="top",
             ha="right",
@@ -333,7 +333,7 @@ def _draw_section_eyebrow(
             MARGIN_X,
             y - 0.013,
             _wrap(sub_label, width=sub_label_wrap),
-            fontsize=7.5,
+            fontsize=theme.FONT_SECTION,
             color=theme.MUTED,
             va="top",
             linespacing=1.4,
@@ -372,9 +372,9 @@ def _draw_table_band(
             x,
             title_y,
             g["title"],
-            fontsize=7.5,
+            fontsize=theme.FONT_SECTION,
             color=theme.INK,
-            weight="semibold",
+            weight=theme.FONT_WEIGHT_SEMIBOLD,
             va="top",
         )
         fig.add_artist(
@@ -385,15 +385,13 @@ def _draw_table_band(
         for j, (hdr, val) in enumerate(cols):
             cx = x + j * cw + cw / 2
             fig.text(
-                cx, header_y, hdr, fontsize=6.5, color=theme.MUTED,
+                cx, header_y, hdr, fontsize=theme.FONT_CAPTION, color=theme.MUTED,
                 ha="center", va="top",
             )
-            # Body Mona Sans (not the Expanded display cut) at semibold:
-            # the wide display face is hard to read for dense numerics and
-            # doesn't column-align; semibold keeps the figures prominent.
+            # Body Mona Sans at semibold keeps figures prominent without changing font family.
             fig.text(
-                cx, value_y, val, fontsize=9, color=theme.INK,
-                ha="center", va="center", weight="semibold",
+                cx, value_y, val, fontsize=theme.FONT_SUBTITLE, color=theme.INK,
+                ha="center", va="center", weight=theme.FONT_WEIGHT_SEMIBOLD,
             )
         fig.add_artist(
             plt.Line2D([x, x + gw], [rule2_y, rule2_y], color=theme.HAIR, linewidth=0.6)
@@ -406,7 +404,7 @@ def _draw_performance_band(
 ) -> None:
     fig.text(
         MARGIN_X, y_top + 0.022, "PERFORMANCE",
-        fontsize=7, color=theme.MUTED, weight="semibold", va="top",
+        fontsize=theme.FONT_BODY_SMALL, color=theme.MUTED, weight=theme.FONT_WEIGHT_SEMIBOLD, va="top",
     )
     fig.text(
         RIGHT_X,
@@ -415,7 +413,7 @@ def _draw_performance_band(
             f"Report Period Start Date {stats.start:%b %Y}    ·    "
             f"End Date {stats.end:%b %Y}"
         ),
-        fontsize=7,
+        fontsize=theme.FONT_BODY_SMALL,
         color=theme.MUTED,
         ha="right",
         va="top",
@@ -458,7 +456,7 @@ def _draw_risk_band(
 ) -> None:
     fig.text(
         MARGIN_X, y_top + 0.022, "RISK & RETURN PROFILE",
-        fontsize=7, color=theme.MUTED, weight="semibold", va="top",
+        fontsize=theme.FONT_BODY_SMALL, color=theme.MUTED, weight=theme.FONT_WEIGHT_SEMIBOLD, va="top",
     )
     vol = metrics.realized_vol_by_window(returns)
     rtr = metrics.return_to_risk_by_window(returns)
@@ -561,7 +559,7 @@ def _draw_disclaimer(fig: plt.Figure, factor: Factor) -> None:
         MARGIN_X,
         0.052,
         _wrap(note, width=185),
-        fontsize=6.3,
+        fontsize=theme.FONT_CAPTION,
         style="italic",
         color=theme.MUTED,
         va="top",
@@ -622,7 +620,7 @@ def render_page_one(
         factor.returns_csv_url,
         primary=False,
         height=ret_btn_h,
-        fontsize=7,
+        fontsize=theme.FONT_BODY_SMALL,
     )
 
     # Performance + risk tabular bands (replace the heatmap & KPI strip)
@@ -634,9 +632,9 @@ def render_page_one(
         MARGIN_X,
         0.295,
         "CUMULATIVE RETURN",
-        fontsize=7,
+        fontsize=theme.FONT_BODY_SMALL,
         color=theme.MUTED,
-        weight="semibold",
+        weight=theme.FONT_WEIGHT_SEMIBOLD,
         va="top",
     )
     _draw_cumulative_chart(
