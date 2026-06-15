@@ -54,6 +54,23 @@ jobs:
       - name: Generate and execute notebooks
         run: python -m scripts.generate_factor_notebooks --execute
 
+      - name: Execute the multi-factor portfolio notebook
+        # Hand-maintained notebook (not generated from scripts/factors_catalog.py),
+        # so it lives outside generate_factor_notebooks.py. Execute it in place
+        # against the live API so the committed copy carries rendered outputs.
+        # `always()` refreshes it independently of the catalog notebooks above;
+        # the commit / PR steps below already stage all of notebooks/.
+        if: always()
+        run: |
+          jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.kernel_name=python3 \
+            --ExecutePreprocessor.timeout=1800 \
+            notebooks/00_multi_factor_portfolio_construction.ipynb
+
+      - name: Redact any leaked secrets from notebooks
+        if: always()
+        run: python -m scripts.redact_secrets notebooks/*.ipynb
+
       - name: Upload notebooks artefact
         if: always()
         uses: actions/upload-artifact@v4
