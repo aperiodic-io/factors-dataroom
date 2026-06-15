@@ -2,7 +2,8 @@
 
 The [Aperiodic Factors](https://factors.aperiodic.io) data room: per-factor PDF
 factsheets, the underlying raw factor data and portfolio returns as CSVs,
-and transparent, runnable notebooks for per-factor AlphaLens analysis.
+and transparent, runnable notebooks for per-factor AlphaLens analysis and
+multi-factor portfolio construction.
 
 ## Factor Analysis Notebooks
 
@@ -17,6 +18,9 @@ open it in Jupyter, e.g.
 **Start here — [cross-factor returns correlation](notebooks/00_factor_returns_correlation.ipynb):**
 a correlation heatmap across every factor's portfolio returns, computed from the
 raw factor data — a quick read on how the individual factors relate to one another.
+
+The factors are meant to be combined into multi-factor portfolios — see how you
+can do that in [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb).
 
 Each factor links to its detail page on our site, a PDF factsheet, the
 AlphaLens notebook, and the underlying data (returns and raw factor data):
