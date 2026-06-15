@@ -55,6 +55,12 @@ def compute_stats(returns: pd.Series) -> Stats:
     # Recompute Calmar with our crypto period (qs.calmar hardcodes 252).
     calmar = cagr / abs(max_dd) if max_dd < 0 else float("nan")
 
+    # True calendar-month extremes. NB: qs.best/worst(aggregate="ME") would
+    # silently return the best/worst *day* — quantstats' aggregate_returns only
+    # matches the legacy "M" alias, so pandas' "ME" falls through every branch
+    # to the raw daily series. Compute from real months instead.
+    monthly = monthly_returns(r)
+
     return Stats(
         start=r.index[0].date(),
         end=r.index[-1].date(),
@@ -67,8 +73,8 @@ def compute_stats(returns: pd.Series) -> Stats:
         max_drawdown=max_dd,
         calmar=calmar,
         hit_rate=float(qs.win_rate(r, compounded=False)),
-        best_month=float(qs.best(r, aggregate="ME")),
-        worst_month=float(qs.worst(r, aggregate="ME")),
+        best_month=float(monthly.max()),
+        worst_month=float(monthly.min()),
     )
 
 
