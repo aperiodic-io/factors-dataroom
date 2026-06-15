@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from scripts.factors_catalog import Factor, load_factors
+from scripts.redact_secrets import collect_secrets, redact_file
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "notebooks"
@@ -276,8 +277,17 @@ def process(py_file: Path, do_execute: bool) -> tuple[str, bool, str]:
     if not ok:
         (LOGS_DIR / f"{stem}.log").write_text(output)
         print(f"  FAILED {stem} -- see ci-artifacts/execution_logs/{stem}.log")
-    else:
-        print(f"  OK {stem}")
+        return stem, ok, output
+
+    # Strip any secret the live API key could have left in an output (a stray
+    # traceback, repr, etc.) before the notebook is committed. Done here, in the
+    # generator, so it also covers local `--execute` runs, not just CI.
+    secrets = collect_secrets()
+    if secrets:
+        redacted = redact_file(str(ipynb), secrets)
+        if redacted:
+            print(f"  redacted {redacted} secret occurrence(s) from {ipynb.name}")
+    print(f"  OK {stem}")
     return stem, ok, output
 
 
