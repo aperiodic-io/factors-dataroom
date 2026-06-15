@@ -37,6 +37,7 @@ from scripts._common import (  # noqa: E402
 from scripts.factors_catalog import Factor  # noqa: E402
 from scripts.factsheet import metrics  # noqa: E402
 from scripts.factsheet.al_utils import clean_factor_data  # noqa: E402
+from scripts.factsheet.analysis_export import write_analysis_json  # noqa: E402
 from scripts.factsheet.page_one import render_page_one  # noqa: E402
 from scripts.factsheet.page_two import charts_bbox, render_page_two  # noqa: E402
 
@@ -109,6 +110,14 @@ def render_factsheet(factor: Factor, api_key: str) -> Path:
     except Exception as exc:  # noqa: BLE001
         print(f"  ! clean_factor_data failed: {exc}")
         clean = None
+
+    # Sales-deck analysis export — same `clean` frame page 2 renders, so the
+    # published JSON numbers are identical to the factsheet by construction.
+    if clean is not None:
+        try:
+            write_analysis_json(factor, clean)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  ! analysis export failed: {exc}")
 
     FACTSHEETS_DIR.mkdir(parents=True, exist_ok=True)
     PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
