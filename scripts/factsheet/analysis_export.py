@@ -1,6 +1,6 @@
 """Factor-analysis JSON export for the sales deck.
 
-Writes ``data/factor-analysis/<id>.json`` from the SAME AlphaLens-clean frame
+Writes ``.internal/factor-analysis/<id>.json`` from the SAME AlphaLens-clean frame
 the factsheet's page 2 renders, so the published numbers are identical by
 construction:
 
@@ -27,7 +27,7 @@ import pandas as pd
 from scripts.factors_catalog import Factor
 from scripts.factsheet.page_two import _forward_return_period, _quantile_daily_returns
 
-ANALYSIS_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "factor-analysis"
+ANALYSIS_DIR = Path(__file__).resolve().parent.parent.parent / ".internal" / "factor-analysis"
 
 
 def _clean_float(value: float) -> float | None:
