@@ -300,12 +300,16 @@ def _draw_section_eyebrow(
     right_label: str = "",
     sub_label: str = "",
     sub_label_wrap: int = 140,
-) -> None:
+) -> float:
     """Section divider. Title left + optional caption right + thin rule above.
 
     When ``sub_label`` is set it sits underneath the title as a muted
     line, wrapped at ``sub_label_wrap`` chars (narrow it when a right-side
-    control shares the header row so the text stays clear of it)."""
+    control shares the header row so the text stays clear of it).
+
+    Returns the figure-fraction y of the caption's bottom edge so the caller
+    can flow the next band beneath a caption that wraps to a variable number
+    of lines; with no ``sub_label`` this is just ``y``."""
     _hline(fig, y + 0.013, lw=0.6)
     fig.text(
         MARGIN_X,
@@ -326,18 +330,22 @@ def _draw_section_eyebrow(
             va="top",
             ha="right",
         )
-    if sub_label:
-        # Wrap to the full text column so the sub-label never spills past
-        # the right margin even on factors with long universe descriptions.
-        fig.text(
-            MARGIN_X,
-            y - 0.013,
-            _wrap(sub_label, width=sub_label_wrap),
-            fontsize=7.5,
-            color=theme.MUTED,
-            va="top",
-            linespacing=1.4,
-        )
+    if not sub_label:
+        return y
+    # Wrap to the full text column so the sub-label never spills past
+    # the right margin even on factors with long universe descriptions.
+    sub_top = y - 0.013
+    st = fig.text(
+        MARGIN_X,
+        sub_top,
+        _wrap(sub_label, width=sub_label_wrap),
+        fontsize=7.5,
+        color=theme.MUTED,
+        va="top",
+        linespacing=1.4,
+    )
+    _, h_frac = _text_extent_frac(fig, st)
+    return sub_top - h_frac
 
 
 # ---------- tabular performance / risk bands ---------------------------------
@@ -348,16 +356,33 @@ def _draw_table_band(
     y_top: float,
     groups: list[dict],
     *,
-    gap: float = 0.020,
+    inter_group_gap: float = 0.028,
 ) -> None:
-    """Draw a horizontal band of grouped mini-tables (institutional-factsheet
-    style). Each group: {'title': str, 'cols': [(header, value), ...],
-    'weight': float}. Layout per group: title → rule → column headers →
-    values → rule."""
+    """Draw a horizontal band of grouped mini-tables.
+
+    Layout mirrors the site's PerformanceSummaryTable (post-#562 on
+    unravel-router): content-driven cell sizing instead of arbitrary
+    per-group weight ratios. The page's available width is divided into
+    equal cell slots based on the band's total cell count, groups are
+    sized to (num_cells × cell_slot), and an inter-group gap separates
+    them. A group whose cell count is short of the budget ends before
+    the right margin — same as the site's flex-wrap behaviour, where
+    bands don't stretch to fill if they don't have to.
+
+    Cell shape:
+        ``(header, value)``                     — default 1 unit wide
+        ``(header, value, min_units: float)``   — wider slot, e.g. for
+                                                   YYYY-MM-DD dates.
+    """
     total_w = RIGHT_X - MARGIN_X
-    n = len(groups)
-    avail = total_w - gap * (n - 1)
-    sum_w = sum(g["weight"] for g in groups)
+    n_groups = len(groups)
+
+    def _cell_units(col: tuple) -> float:
+        return float(col[2]) if len(col) >= 3 else 1.0
+
+    total_units = sum(_cell_units(c) for g in groups for c in g["cols"])
+    avail = total_w - inter_group_gap * max(n_groups - 1, 0)
+    unit_w = avail / total_units if total_units else 0.0
 
     title_y = y_top
     rule1_y = y_top - 0.014
@@ -367,7 +392,8 @@ def _draw_table_band(
 
     x = MARGIN_X
     for g in groups:
-        gw = avail * g["weight"] / sum_w
+        cols = g["cols"]
+        gw = sum(_cell_units(c) for c in cols) * unit_w
         fig.text(
             x,
             title_y,
@@ -380,30 +406,36 @@ def _draw_table_band(
         fig.add_artist(
             plt.Line2D([x, x + gw], [rule1_y, rule1_y], color=theme.HAIR, linewidth=0.6)
         )
-        cols = g["cols"]
-        cw = gw / len(cols)
-        for j, (hdr, val) in enumerate(cols):
-            cx = x + j * cw + cw / 2
+        cx = x
+        for col in cols:
+            hdr, val = col[0], col[1]
+            cw = _cell_units(col) * unit_w
+            mid = cx + cw / 2
             fig.text(
-                cx, header_y, hdr, fontsize=6.5, color=theme.MUTED,
+                mid, header_y, hdr, fontsize=6.5, color=theme.MUTED,
                 ha="center", va="top",
             )
             # Body Mona Sans (not the Expanded display cut) at semibold:
             # the wide display face is hard to read for dense numerics and
             # doesn't column-align; semibold keeps the figures prominent.
             fig.text(
-                cx, value_y, val, fontsize=9, color=theme.INK,
+                mid, value_y, val, fontsize=9, color=theme.INK,
                 ha="center", va="center", weight="semibold",
             )
+            cx += cw
         fig.add_artist(
             plt.Line2D([x, x + gw], [rule2_y, rule2_y], color=theme.HAIR, linewidth=0.6)
         )
-        x += gw + gap
+        x += gw + inter_group_gap
 
 
 def _draw_performance_band(
     fig: plt.Figure, returns: pd.Series, stats: metrics.Stats, y_top: float
 ) -> None:
+    """Two-group Performance band: Cumulative Returns
+    (MTD / Last Month / 1M / 3M / YTD) on the left, annualised CAGR
+    (1Y / 3Y / 5Y / SI) on the right. Mirrors the PerformanceSummaryTable
+    on the site's portfolio page."""
     fig.text(
         MARGIN_X, y_top + 0.022, "PERFORMANCE",
         fontsize=7, color=theme.MUTED, weight="semibold", va="top",
@@ -420,34 +452,32 @@ def _draw_performance_band(
         ha="right",
         va="top",
     )
-    gr = metrics.gross_return_by_window(returns)
-    ann = metrics.annual_returns(returns)
-    ann_labels = sorted(
-        ann, key=lambda k: (k == "YTD", k)
-    )  # years ascending, YTD last
+    cum = metrics.cumulative_returns_by_window(returns)
+    cagr = metrics.cagr_by_window(returns)
+    # 1M / 3M sit with the cumulative figures as compound (not annualised)
+    # returns — extrapolating a sub-quarter window to a yearly rate overstates
+    # it. gross_return_by_window gives the trailing compound return per window.
+    gross = metrics.gross_return_by_window(returns)
     _draw_table_band(
         fig,
         y_top,
         [
             {
-                "title": "Gross Rate of Return",
-                "weight": 5,
+                "title": "Cumulative Returns",
                 "cols": [
-                    (lbl, metrics.fmt_pct(gr[lbl]))
-                    for lbl in ("1M", "3M", "1Y", "3Y", "5Y")
+                    ("MTD", metrics.fmt_pct(cum["MTD"])),
+                    ("Last Month", metrics.fmt_pct(cum["LastMonth"])),
+                    ("1M", metrics.fmt_pct(gross["1M"])),
+                    ("3M", metrics.fmt_pct(gross["3M"])),
+                    ("YTD", metrics.fmt_pct(cum["YTD"])),
                 ],
             },
             {
-                "title": "Annual Performance (%)",
-                "weight": max(len(ann_labels), 3),
+                "title": "Annualised Returns (CAGR)",
                 "cols": [
-                    (lbl, metrics.fmt_pct(ann[lbl])) for lbl in ann_labels
+                    (lbl, metrics.fmt_pct(cagr[lbl]))
+                    for lbl in ("1Y", "3Y", "5Y", "SI")
                 ],
-            },
-            {
-                "title": "Since Inception",
-                "weight": 1.5,
-                "cols": [("SI", metrics.fmt_pct(gr["SI"]))],
             },
         ],
     )
@@ -456,12 +486,15 @@ def _draw_performance_band(
 def _draw_risk_band(
     fig: plt.Figure, returns: pd.Series, stats: metrics.Stats, y_top: float
 ) -> None:
+    """Risk Profile band: Realised Volatility (annualised) across the same
+    windows as CAGR, plus Max Drawdown (% + date). Matches the site's
+    Risk Profile card; Return-to-Risk Ratio is intentionally dropped to
+    stay aligned with the site's content."""
     fig.text(
-        MARGIN_X, y_top + 0.022, "RISK & RETURN PROFILE",
+        MARGIN_X, y_top + 0.022, "RISK PROFILE",
         fontsize=7, color=theme.MUTED, weight="semibold", va="top",
     )
     vol = metrics.realized_vol_by_window(returns)
-    rtr = metrics.return_to_risk_by_window(returns)
     mdd, mdd_date = metrics.max_drawdown_with_date(returns)
     _draw_table_band(
         fig,
@@ -469,26 +502,25 @@ def _draw_risk_band(
         [
             {
                 "title": "Realised Volatility (annualised)",
-                "weight": 4,
                 "cols": [
                     (lbl, metrics.fmt_pct(vol[lbl]))
-                    for lbl in ("1M", "3M", "1Y", "3Y")
-                ],
-            },
-            {
-                "title": "Return-to-Risk Ratio",
-                "weight": 4,
-                "cols": [
-                    (lbl, metrics.fmt_ratio(rtr[lbl]))
-                    for lbl in ("1M", "3M", "1Y", "3Y")
+                    for lbl in ("1M", "3M", "1Y", "3Y", "5Y", "SI")
                 ],
             },
             {
                 "title": "Max Drawdown",
-                "weight": 2.4,
                 "cols": [
                     ("%", metrics.fmt_pct(mdd)),
-                    ("Date", mdd_date.strftime("%Y-%m-%d") if mdd_date else "—"),
+                    # Date string ("YYYY-MM-DD") is much wider than the
+                    # default %-style values — give it 1.4 slot units
+                    # so it doesn't crowd the % column. Mirrors the
+                    # site's natural cell-grows-to-content behaviour
+                    # (whitespace-nowrap on StatCell values).
+                    (
+                        "Date",
+                        mdd_date.strftime("%Y-%m-%d") if mdd_date else "—",
+                        1.4,
+                    ),
                 ],
             },
         ],
@@ -595,7 +627,7 @@ def render_page_one(
     overview_top = min(0.790, subtitle_bottom - 0.024)
     _draw_overview(fig, factor, y_top=overview_top)
 
-    _draw_section_eyebrow(
+    eyebrow_bottom = _draw_section_eyebrow(
         fig,
         y=0.520,
         label=f"Example Top {factor.default_universe} cross-sectional portfolio",
@@ -625,8 +657,12 @@ def render_page_one(
         fontsize=7,
     )
 
-    # Performance + risk tabular bands (replace the heatmap & KPI strip)
-    _draw_performance_band(fig, returns, stats, y_top=0.453)
+    # Performance + risk tabular bands (replace the heatmap & KPI strip).
+    # A long (3-line) caption would otherwise overlap the PERFORMANCE header,
+    # so drop the band just enough to clear the caption's measured bottom;
+    # short captions keep the tuned 0.453 position (the clamp is a no-op).
+    perf_y_top = min(0.453, eyebrow_bottom - 0.028)
+    _draw_performance_band(fig, returns, stats, y_top=perf_y_top)
     _draw_risk_band(fig, returns, stats, y_top=0.363)
 
     # Cumulative return — full width below the tables
