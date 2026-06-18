@@ -71,6 +71,10 @@ jobs:
         if: always()
         run: python -m scripts.redact_secrets notebooks/*.ipynb
 
+      - name: Strip transient notebook metadata
+        if: always()
+        run: python -m scripts.clean_notebooks notebooks/
+
       - name: Upload notebooks artefact
         if: always()
         uses: actions/upload-artifact@v4

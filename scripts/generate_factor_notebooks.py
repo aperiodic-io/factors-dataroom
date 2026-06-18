@@ -15,6 +15,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from scripts.clean_notebooks import clean_notebook
 from scripts.factors_catalog import Factor, load_factors
 from scripts.redact_secrets import collect_secrets, redact_file
 
@@ -255,6 +256,7 @@ def process(py_file: Path, do_execute: bool) -> tuple[str, bool, str]:
     )
     if not ok:
         return stem, False, output
+    clean_notebook(ipynb)
     if not do_execute:
         print(f"  converted {ipynb.name}")
         return stem, True, ""
@@ -287,6 +289,7 @@ def process(py_file: Path, do_execute: bool) -> tuple[str, bool, str]:
         redacted = redact_file(str(ipynb), secrets)
         if redacted:
             print(f"  redacted {redacted} secret occurrence(s) from {ipynb.name}")
+    clean_notebook(ipynb)
     print(f"  OK {stem}")
     return stem, ok, output
 
