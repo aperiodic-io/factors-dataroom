@@ -125,9 +125,6 @@ jobs:
           done
           exit 1
 
-      # `main` is branch-protected, so the daily refresh lands via an
-      # auto-merged PR (below) rather than a direct push. Schedule /
-      # manual-dispatch / push-to-main open (or update) the refresh PR.
       - name: Open PR with refreshed data
         id: cpr
         if: ${{ github.ref_name == 'main' && github.event.inputs.skip_commit != 'true' }}

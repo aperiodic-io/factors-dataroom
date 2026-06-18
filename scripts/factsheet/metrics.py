@@ -50,9 +50,6 @@ def compute_stats(returns: pd.Series) -> Stats:
     if r.empty:
         raise ValueError("Returns series is empty")
 
-    # Annualise on the calendar span (not the observation count that qs.cagr
-    # uses), matching the apps/alpha portfolio page convention so the figures
-    # line up across surfaces.
     span_days = (r.index[-1] - r.index[0]).days
     gross = float((1.0 + r).prod())
     cagr = (
