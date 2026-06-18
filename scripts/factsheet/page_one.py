@@ -300,12 +300,16 @@ def _draw_section_eyebrow(
     right_label: str = "",
     sub_label: str = "",
     sub_label_wrap: int = 140,
-) -> None:
+) -> float:
     """Section divider. Title left + optional caption right + thin rule above.
 
     When ``sub_label`` is set it sits underneath the title as a muted
     line, wrapped at ``sub_label_wrap`` chars (narrow it when a right-side
-    control shares the header row so the text stays clear of it)."""
+    control shares the header row so the text stays clear of it).
+
+    Returns the figure-fraction y of the caption's bottom edge so the caller
+    can flow the next band beneath a caption that wraps to a variable number
+    of lines; with no ``sub_label`` this is just ``y``."""
     _hline(fig, y + 0.013, lw=0.6)
     fig.text(
         MARGIN_X,
@@ -326,18 +330,22 @@ def _draw_section_eyebrow(
             va="top",
             ha="right",
         )
-    if sub_label:
-        # Wrap to the full text column so the sub-label never spills past
-        # the right margin even on factors with long universe descriptions.
-        fig.text(
-            MARGIN_X,
-            y - 0.013,
-            _wrap(sub_label, width=sub_label_wrap),
-            fontsize=7.5,
-            color=theme.MUTED,
-            va="top",
-            linespacing=1.4,
-        )
+    if not sub_label:
+        return y
+    # Wrap to the full text column so the sub-label never spills past
+    # the right margin even on factors with long universe descriptions.
+    sub_top = y - 0.013
+    st = fig.text(
+        MARGIN_X,
+        sub_top,
+        _wrap(sub_label, width=sub_label_wrap),
+        fontsize=7.5,
+        color=theme.MUTED,
+        va="top",
+        linespacing=1.4,
+    )
+    _, h_frac = _text_extent_frac(fig, st)
+    return sub_top - h_frac
 
 
 # ---------- tabular performance / risk bands ---------------------------------
@@ -595,7 +603,7 @@ def render_page_one(
     overview_top = min(0.790, subtitle_bottom - 0.024)
     _draw_overview(fig, factor, y_top=overview_top)
 
-    _draw_section_eyebrow(
+    eyebrow_bottom = _draw_section_eyebrow(
         fig,
         y=0.520,
         label=f"Example Top {factor.default_universe} cross-sectional portfolio",
@@ -625,8 +633,12 @@ def render_page_one(
         fontsize=7,
     )
 
-    # Performance + risk tabular bands (replace the heatmap & KPI strip)
-    _draw_performance_band(fig, returns, stats, y_top=0.453)
+    # Performance + risk tabular bands (replace the heatmap & KPI strip).
+    # A long (3-line) caption would otherwise overlap the PERFORMANCE header,
+    # so drop the band just enough to clear the caption's measured bottom;
+    # short captions keep the tuned 0.453 position (the clamp is a no-op).
+    perf_y_top = min(0.453, eyebrow_bottom - 0.028)
+    _draw_performance_band(fig, returns, stats, y_top=perf_y_top)
     _draw_risk_band(fig, returns, stats, y_top=0.363)
 
     # Cumulative return — full width below the tables
