@@ -111,6 +111,7 @@ jobs:
           exit 1
 
       - name: Open PR with refreshed notebooks
+        id: cpr
         if: ${{ success() && (github.event_name != 'push' || github.ref_name == 'main') }}
         uses: peter-evans/create-pull-request@v6
         with:
@@ -124,4 +125,16 @@ jobs:
             `scripts/factors_catalog.py`, executed against the live Aperiodic Factors API.
 
             Trigger: `${{ github.event_name }}`.
+
+            Scheduled runs auto-merge once branch-protection requirements are
+            met; for manual / `main` triggers, review the diff and merge.
           delete-branch: true
+
+      - name: Auto-merge the scheduled refresh
+        if: ${{ github.event_name == 'schedule' && steps.cpr.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          gh pr merge "$PR" --squash --delete-branch --auto \
+            || gh pr merge "$PR" --squash --delete-branch
