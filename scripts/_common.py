@@ -21,10 +21,13 @@ BACKEND_LEVERAGE = 2.0
 
 def get_unlevered_portfolio_returns(*, id: str, api_key: str) -> "pd.Series":
     """Fetch a portfolio's daily returns and rescale them from the backend's
-    2x leverage down to 1x (see ``BACKEND_LEVERAGE``)."""
+    2x leverage down to 1x (see ``BACKEND_LEVERAGE``). Also drops a trailing
+    incomplete (current-day) observation so the series ends on the last
+    complete UTC day, matching the apps/alpha portfolio page."""
     from aperiodic import get_portfolio_returns
 
-    return get_portfolio_returns(id=id, api_key=api_key) / BACKEND_LEVERAGE
+    returns = get_portfolio_returns(id=id, api_key=api_key) / BACKEND_LEVERAGE
+    return drop_incomplete_last_day(returns)
 
 
 def get_api_key() -> str:
@@ -32,6 +35,20 @@ def get_api_key() -> str:
     if not key:
         raise RuntimeError("APERIODIC_API_KEY environment variable is not set")
     return key
+
+
+def drop_incomplete_last_day(returns: "pd.Series") -> "pd.Series":
+    """Drop a trailing same-day (incomplete) observation so the series ends on
+    the last *complete* UTC day."""
+    import pandas as pd
+
+    if returns.empty:
+        return returns
+    last_date = pd.Timestamp(returns.index[-1]).date()
+    today_utc = pd.Timestamp.now(tz="UTC").date()
+    if last_date == today_utc:
+        return returns.iloc[:-1]
+    return returns
 
 
 class UnknownFactors(KeyError):
