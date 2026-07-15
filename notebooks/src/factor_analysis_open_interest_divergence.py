@@ -28,6 +28,11 @@ def get_api_key() -> str:
 def factor_analysis(
     signal: pd.DataFrame, price: pd.DataFrame, max_loss: float = 1.0
 ) -> None:
+    # The API can hand back object-dtype frames; AlphaLens' tear sheet then calls
+    # np.sqrt on them and raises "loop of ufunc does not support argument 0 of
+    # type int which has no callable sqrt method". Coerce to numeric first.
+    signal = signal.apply(pd.to_numeric, errors="coerce")
+    price = price.apply(pd.to_numeric, errors="coerce")
     # max_loss is AlphaLens' guard that raises when too much of the factor is
     # dropped in forward-return alignment + quantile binning. Restricting to the
     # dynamic universe legitimately drops a lot (90%+ for sparse long-only
