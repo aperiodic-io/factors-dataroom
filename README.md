@@ -55,8 +55,18 @@ For the full list of portfolios and parameters, see the
 
 ```bash
 pip install -r requirements.txt
-export APERIODIC_API_KEY="your_api_key_here"   # or put it in a .env file
 ```
 
-Get an API key by signing up at [factors.aperiodic.io](https://factors.aperiodic.io)
-and generating one in your API settings.
+The notebooks run **out-of-the-box** — the
+[Aperiodic Factors API](https://factors.aperiodic.io) serves preview data
+against a shared public demo key, so no signup or configuration is required.
+`requirements.txt` installs the client straight from PyPI
+([`aperiodic-factors`](https://pypi.org/project/aperiodic-factors/)).
+
+For full (non-preview) data, sign up at
+[factors.aperiodic.io](https://factors.aperiodic.io), generate an API key in
+your API settings, and make it available to the notebooks:
+
+```bash
+export APERIODIC_API_KEY="your_api_key_here"   # or put it in a .env file
+```

@@ -115,9 +115,28 @@ def _build_factor(entry: dict) -> Factor:
     )
 
 
+# Composite portfolios (e.g. "composite-7" / "7 Factor Composite") are blends of
+# several cross-sectional factors, not single factors -- the single-factor
+# portfolio API does not serve them (get_tickers 400s "Incorrect portfolio id").
+# They are excluded from the single-factor data room (notebooks, factsheets,
+# README). Detected by name/id marker since catalog.json has no explicit kind.
+_COMPOSITE_MARKER = "composite"
+
+
+def _is_composite(factor: Factor) -> bool:
+    return (
+        _COMPOSITE_MARKER in factor.id.lower()
+        or _COMPOSITE_MARKER in factor.name.lower()
+    )
+
+
 @lru_cache(maxsize=1)
 def _factors() -> tuple[Factor, ...]:
-    return tuple(_build_factor(entry) for entry in _load_catalog())
+    return tuple(
+        factor
+        for factor in (_build_factor(entry) for entry in _load_catalog())
+        if not _is_composite(factor)
+    )
 
 
 def load_factors() -> list[Factor]:

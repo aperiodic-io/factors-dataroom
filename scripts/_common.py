@@ -24,7 +24,7 @@ def get_unlevered_portfolio_returns(*, id: str, api_key: str) -> "pd.Series":
     2x leverage down to 1x (see ``BACKEND_LEVERAGE``). Also drops a trailing
     incomplete (current-day) observation so the series ends on the last
     complete UTC day, matching the apps/alpha portfolio page."""
-    from aperiodic import get_portfolio_returns
+    from aperiodic_factors import get_portfolio_returns
 
     returns = get_portfolio_returns(id=id, api_key=api_key) / BACKEND_LEVERAGE
     return drop_incomplete_last_day(returns)

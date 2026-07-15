@@ -24,39 +24,65 @@ SRC_DIR = NOTEBOOKS_DIR / "src"
 # 00_ prefix sorts the cross-factor overview above every factor_analysis_*.
 CORRELATION_STEM = "00_factor_returns_correlation"
 
-# Resolves `import analysis` (package now lives in notebooks/) and
-# `scripts.factors_catalog` from wherever the notebook runs (notebooks/
-# under Jupyter, repo root under nbconvert) -- put both the repo root and
-# notebooks/ on sys.path.
-_PATH_BOOTSTRAP = '''import sys
-from pathlib import Path
-
-_root = Path.cwd()
-while not (_root / "notebooks" / "analysis").is_dir() and _root != _root.parent:
-    _root = _root.parent
-for _p in (_root, _root / "notebooks"):
-    sys.path.insert(0, str(_p))
-'''
-
 _GENERATED_BANNER = (
     "# AUTO-GENERATED from scripts/factors_catalog.py by\n"
     "# scripts/generate_factor_notebooks.py -- do not edit by hand.\n"
 )
 
-_FACTOR_TEMPLATE = '''# %%
+_FACTOR_TEMPLATE = '''# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
 {banner}
-{bootstrap}
-from aperiodic import (
+# --- Utility functions (inlined so this notebook is self-contained). ---
+# This cell is collapsed by default when the notebook is rendered; expand it to
+# see the helpers below.
+import os
+import warnings
+
+import alphalens
+import pandas as pd
+from dotenv import load_dotenv
+
+# The factors API serves preview data against a shared public demo key, so the
+# notebook runs out-of-the-box with no signup. Export APERIODIC_API_KEY (or set
+# it in a .env file) to query with your own key for full access.
+DEMO_API_KEY = "DEMO-KEY"
+
+
+def get_api_key() -> str:
+    try:
+        load_dotenv()
+    except Exception:  # noqa: BLE001
+        warnings.warn("Could not load .env")  # noqa: B028
+    return os.environ.get("APERIODIC_API_KEY") or DEMO_API_KEY
+
+
+def factor_analysis(
+    signal: pd.DataFrame, price: pd.DataFrame, max_loss: float = 1.0
+) -> None:
+    # The API can hand back object-dtype frames; AlphaLens' tear sheet then calls
+    # np.sqrt on them and raises "loop of ufunc does not support argument 0 of
+    # type int which has no callable sqrt method". Coerce to numeric first.
+    signal = signal.apply(pd.to_numeric, errors="coerce")
+    price = price.apply(pd.to_numeric, errors="coerce")
+    # max_loss is AlphaLens' guard that raises when too much of the factor is
+    # dropped in forward-return alignment + quantile binning. Restricting to the
+    # dynamic universe legitimately drops a lot (90%+ for sparse long-only
+    # factors), so default to 1.0 (never raise); AlphaLens still prints the exact
+    # drop %, so the loss stays visible.
+    factor_data = alphalens.utils.get_clean_factor_and_forward_returns(
+        signal.stack(), price, quantiles=5, max_loss=max_loss
+    )
+    alphalens.tears.create_full_tear_sheet(factor_data)
+
+
+# %%
+from aperiodic_factors import (
     get_historical_universe,
     get_portfolio_factors_historical,
     get_prices,
     get_tickers,
 )
 
-from analysis.alphalens import factor_analysis
-from analysis.utils import get_env
-
-APERIODIC_API_KEY = get_env("APERIODIC_API_KEY")
+APERIODIC_API_KEY = get_api_key()
 
 # {name} -- portfolio {portfolio_id}
 portfolio = "{id}"
@@ -97,27 +123,63 @@ factor_analysis(restricted_factors[columns_intersection], underlying)
 # %%
 '''
 
-_CORRELATION_TEMPLATE = '''# %%
+_CORRELATION_TEMPLATE = '''# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
 {banner}
-{bootstrap}
+# --- Utility functions (inlined so this notebook is self-contained). ---
+# This cell is collapsed by default when the notebook is rendered; expand it to
+# see the helpers below.
+import os
+import warnings
+
+import requests
+from dotenv import load_dotenv
+
+# The factors API serves preview data against a shared public demo key, so the
+# notebook runs out-of-the-box with no signup. Export APERIODIC_API_KEY (or set
+# it in a .env file) to query with your own key for full access.
+DEMO_API_KEY = "DEMO-KEY"
+CATALOG_URL = "https://factors.aperiodic.io/catalog.json"
+
+
+def get_api_key() -> str:
+    try:
+        load_dotenv()
+    except Exception:  # noqa: BLE001
+        warnings.warn("Could not load .env")  # noqa: B028
+    return os.environ.get("APERIODIC_API_KEY") or DEMO_API_KEY
+
+
+def load_portfolio_ids() -> list[str]:
+    # The published catalog bundle is the single source of truth for the factor
+    # list; fetch it directly so the notebook needs nothing else from the repo.
+    bundle = requests.get(CATALOG_URL, timeout=30).json()
+    return [factor["slug"] for factor in bundle["catalog"]["factors"]]
+
+
+# %%
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from aperiodic import get_portfolio_returns
+from aperiodic_factors import get_portfolio_returns
 
-from analysis.utils import get_env
-from scripts.factors_catalog import load_factors
+APERIODIC_API_KEY = get_api_key()
 
-APERIODIC_API_KEY = get_env("APERIODIC_API_KEY")
+portfolios = load_portfolio_ids()
 
-portfolios = [factor.portfolio_id for factor in load_factors()]
+# Fetch each portfolio's returns, skipping any the API can't serve yet (e.g. a
+# brand-new factor with no published returns) so one bad id doesn't sink the
+# whole heatmap.
+returns = {{}}
+for portfolio in portfolios:
+    try:
+        returns[portfolio] = get_portfolio_returns(
+            id=portfolio, api_key=APERIODIC_API_KEY
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"skipping {{portfolio}}: {{exc}}")
 
-returns_df = pd.DataFrame(
-    {{
-        portfolio: get_portfolio_returns(id=portfolio, api_key=APERIODIC_API_KEY)
-        for portfolio in portfolios
-    }}
-)
+# Coerce to numeric so object-dtype series from the API don't make .corr() raise.
+returns_df = pd.DataFrame(returns).apply(pd.to_numeric, errors="coerce")
 
 # %%
 
@@ -185,7 +247,6 @@ def write_scripts(factors: list[Factor]) -> list[Path]:
             path,
             _FACTOR_TEMPLATE.format(
                 banner=_GENERATED_BANNER.rstrip(),
-                bootstrap=_PATH_BOOTSTRAP,
                 name=factor.name,
                 portfolio_id=factor.portfolio_id,
                 id=factor.id,
@@ -201,7 +262,6 @@ def write_scripts(factors: list[Factor]) -> list[Path]:
         corr_path,
         _CORRELATION_TEMPLATE.format(
             banner=_GENERATED_BANNER.rstrip(),
-            bootstrap=_PATH_BOOTSTRAP,
         ),
     )
     written.append(corr_path)
