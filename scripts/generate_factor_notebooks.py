@@ -58,6 +58,11 @@ def get_api_key() -> str:
 def factor_analysis(
     signal: pd.DataFrame, price: pd.DataFrame, max_loss: float = 1.0
 ) -> None:
+    # The API can hand back object-dtype frames; AlphaLens' tear sheet then calls
+    # np.sqrt on them and raises "loop of ufunc does not support argument 0 of
+    # type int which has no callable sqrt method". Coerce to numeric first.
+    signal = signal.apply(pd.to_numeric, errors="coerce")
+    price = price.apply(pd.to_numeric, errors="coerce")
     # max_loss is AlphaLens' guard that raises when too much of the factor is
     # dropped in forward-return alignment + quantile binning. Restricting to the
     # dynamic universe legitimately drops a lot (90%+ for sparse long-only
@@ -161,12 +166,20 @@ APERIODIC_API_KEY = get_api_key()
 
 portfolios = load_portfolio_ids()
 
-returns_df = pd.DataFrame(
-    {{
-        portfolio: get_portfolio_returns(id=portfolio, api_key=APERIODIC_API_KEY)
-        for portfolio in portfolios
-    }}
-)
+# Fetch each portfolio's returns, skipping any the API can't serve yet (e.g. a
+# brand-new factor with no published returns) so one bad id doesn't sink the
+# whole heatmap.
+returns = {{}}
+for portfolio in portfolios:
+    try:
+        returns[portfolio] = get_portfolio_returns(
+            id=portfolio, api_key=APERIODIC_API_KEY
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"skipping {{portfolio}}: {{exc}}")
+
+# Coerce to numeric so object-dtype series from the API don't make .corr() raise.
+returns_df = pd.DataFrame(returns).apply(pd.to_numeric, errors="coerce")
 
 # %%
 
