@@ -1,26 +1,46 @@
-# %%
+# %% tags=["hide-input"] jupyter={"source_hidden": true}
 # AUTO-GENERATED from scripts/factors_catalog.py by
 # scripts/generate_factor_notebooks.py -- do not edit by hand.
-import sys
-from pathlib import Path
+# --- Utility functions (inlined so this notebook is self-contained). ---
+# This cell is collapsed by default when the notebook is rendered; expand it to
+# see the helpers below.
+import os
+import warnings
 
-_root = Path.cwd()
-while not (_root / "notebooks" / "analysis").is_dir() and _root != _root.parent:
-    _root = _root.parent
-for _p in (_root, _root / "notebooks"):
-    sys.path.insert(0, str(_p))
+import requests
+from dotenv import load_dotenv
 
+# The factors API serves preview data against a shared public demo key, so the
+# notebook runs out-of-the-box with no signup. Export APERIODIC_API_KEY (or set
+# it in a .env file) to query with your own key for full access.
+DEMO_API_KEY = "DEMO-KEY"
+CATALOG_URL = "https://factors.aperiodic.io/catalog.json"
+
+
+def get_api_key() -> str:
+    try:
+        load_dotenv()
+    except Exception:  # noqa: BLE001
+        warnings.warn("Could not load .env")  # noqa: B028
+    return os.environ.get("APERIODIC_API_KEY") or DEMO_API_KEY
+
+
+def load_portfolio_ids() -> list[str]:
+    # The published catalog bundle is the single source of truth for the factor
+    # list; fetch it directly so the notebook needs nothing else from the repo.
+    bundle = requests.get(CATALOG_URL, timeout=30).json()
+    return [factor["slug"] for factor in bundle["catalog"]["factors"]]
+
+
+# %%
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from aperiodic import get_portfolio_returns
+from aperiodic_factors import get_portfolio_returns
 
-from analysis.utils import get_env
-from scripts.factors_catalog import load_factors
+APERIODIC_API_KEY = get_api_key()
 
-APERIODIC_API_KEY = get_env("APERIODIC_API_KEY")
-
-portfolios = [factor.portfolio_id for factor in load_factors()]
+portfolios = load_portfolio_ids()
 
 returns_df = pd.DataFrame(
     {

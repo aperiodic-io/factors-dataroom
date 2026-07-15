@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 from joblib import Parallel, delayed  # noqa: E402
 from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
-from aperiodic import (  # noqa: E402
+from aperiodic_factors import (  # noqa: E402
     get_historical_universe,
     get_portfolio_factors_historical,
     get_prices,
