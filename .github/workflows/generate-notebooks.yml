@@ -68,6 +68,24 @@ jobs:
       - name: Generate and execute notebooks
         run: python -m scripts.generate_factor_notebooks --execute
 
+      - name: Show notebook execution report
+        # Surface the per-notebook failure tracebacks in the (readable) job log.
+        # The generator captures nbconvert output into ci-artifacts/ (uploaded as
+        # an artifact); echo it here too so a failure is diagnosable straight from
+        # the logs. `always()` so it runs even when the step above exits non-zero.
+        if: always()
+        run: |
+          echo "===== ci-artifacts/execution_report.md ====="
+          cat ci-artifacts/execution_report.md 2>/dev/null || echo "(no report written)"
+          echo
+          echo "===== per-notebook execution logs (tail) ====="
+          shopt -s nullglob
+          for log in ci-artifacts/execution_logs/*.log; do
+            echo "----- ${log} -----"
+            tail -n 40 "${log}"
+            echo
+          done
+
       - name: Execute the multi-factor portfolio notebook
         # Hand-maintained notebook (not generated from scripts/factors_catalog.py),
         # so it lives outside generate_factor_notebooks.py. Execute it in place
