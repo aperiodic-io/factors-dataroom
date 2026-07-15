@@ -1,4 +1,6 @@
-./aperiodic-factors-client
+# Aperiodic Factors API client, published on PyPI:
+# https://pypi.org/project/aperiodic-factors/
+aperiodic-factors
 matplotlib
 pandas
 numpy

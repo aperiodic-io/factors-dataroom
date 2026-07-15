@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
-from aperiodic import (
+from aperiodic_factors import (
     get_portfolio_factors_historical,
     get_tickers,
 )

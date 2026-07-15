@@ -6,9 +6,23 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+  # Regenerate + execute the notebooks whenever a generation *input* changes.
+  # On main this opens a refresh PR (see the create-pull-request step below); on
+  # any other branch it commits the executed notebooks straight back to that
+  # branch, updating its PR. Scoped to the inputs (sources / scripts / deps) so a
+  # data-only or factsheet commit doesn't rebuild the notebooks -- and so the
+  # workflow's own commit-back, which only touches the .ipynb outputs, does not
+  # re-trigger it. (The commit-back is also pushed with GITHUB_TOKEN, whose
+  # pushes never start a new workflow run, so this cannot loop.)
   push:
     branches:
-      - main
+      - '**'
+      - '!automation/**'
+    paths:
+      - 'notebooks/src/**'
+      - 'scripts/**'
+      - 'requirements.txt'
+      - '.github/workflows/generate-notebooks.yml'
 
 permissions:
   contents: write
@@ -53,6 +67,24 @@ jobs:
 
       - name: Generate and execute notebooks
         run: python -m scripts.generate_factor_notebooks --execute
+
+      - name: Show notebook execution report
+        # Surface the per-notebook failure tracebacks in the (readable) job log.
+        # The generator captures nbconvert output into ci-artifacts/ (uploaded as
+        # an artifact); echo it here too so a failure is diagnosable straight from
+        # the logs. `always()` so it runs even when the step above exits non-zero.
+        if: always()
+        run: |
+          echo "===== ci-artifacts/execution_report.md ====="
+          cat ci-artifacts/execution_report.md 2>/dev/null || echo "(no report written)"
+          echo
+          echo "===== per-notebook execution logs (tail) ====="
+          shopt -s nullglob
+          for log in ci-artifacts/execution_logs/*.log; do
+            echo "----- ${log} -----"
+            tail -n 40 "${log}"
+            echo
+          done
 
       - name: Execute the multi-factor portfolio notebook
         # Hand-maintained notebook (not generated from scripts/factors_catalog.py),
