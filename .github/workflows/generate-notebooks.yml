@@ -6,9 +6,23 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+  # Regenerate + execute the notebooks whenever a generation *input* changes.
+  # On main this opens a refresh PR (see the create-pull-request step below); on
+  # any other branch it commits the executed notebooks straight back to that
+  # branch, updating its PR. Scoped to the inputs (sources / scripts / deps) so a
+  # data-only or factsheet commit doesn't rebuild the notebooks -- and so the
+  # workflow's own commit-back, which only touches the .ipynb outputs, does not
+  # re-trigger it. (The commit-back is also pushed with GITHUB_TOKEN, whose
+  # pushes never start a new workflow run, so this cannot loop.)
   push:
     branches:
-      - main
+      - '**'
+      - '!automation/**'
+    paths:
+      - 'notebooks/src/**'
+      - 'scripts/**'
+      - 'requirements.txt'
+      - '.github/workflows/generate-notebooks.yml'
 
 permissions:
   contents: write
