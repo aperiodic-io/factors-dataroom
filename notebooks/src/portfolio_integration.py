@@ -1,10 +1,14 @@
 # %% [markdown]
-# # Adding Momentum to an existing portfolio
+# # Adding a factor to an existing portfolio
 #
-# This notebook measures what a **Momentum** sleeve does to a book you already
-# run: how correlated the two are, and how the blend's risk and return compare
-# before and after. Portfolios are the published **Top-40, unlevered (1x)**
-# returns.
+# This notebook measures what adding a single factor's sleeve does to a book you
+# already run: how correlated the two are, and how the blend's risk and return
+# compare before and after. Portfolios are the published **Top-40, unlevered
+# (1x)** returns.
+#
+# The example below uses **Retail Flow** -- change `FACTOR_PORTFOLIOS` and
+# `FACTOR_LABEL` in the parameters to run it for any other factor in the
+# [catalog](https://factors.aperiodic.io/catalog).
 #
 # **Prerequisites: none** -- runs on the shared public demo key (preview data);
 # set `APERIODIC_API_KEY` for full data.
@@ -90,8 +94,9 @@ def plot_cumulative_and_drawdown(series_by_label: dict) -> None:
 # - **APERIODIC_API_KEY** -- optional. Falls back to a Google Colab secret, then
 #   a local `.env` / environment variable, then the shared public **demo key**
 #   (preview data), so the notebook runs as-is.
-# - **FACTOR_PORTFOLIOS** -- the published portfolio slug(s) that make up the
-#   sleeve: one for a single factor, the constituents for a composite.
+# - **FACTOR_PORTFOLIOS** / **FACTOR_LABEL** -- the published portfolio slug(s)
+#   to add as a sleeve (one for a single factor, or several to blend a basket
+#   into one sleeve), and the display label to show for it.
 # - **EXISTING_PORTFOLIO_RETURNS_CSV** -- path or URL to your own daily
 #   `date,return` CSV. `None` blends against a synthetic demo book instead.
 # - **ALLOCATION** -- the fraction of the book reallocated into the sleeve.
@@ -121,10 +126,10 @@ else:
 import aperiodic_factors as aperiodic
 from aperiodic_factors import get_portfolio_returns
 
-# Published portfolio slug(s) whose returns make up the factor sleeve. A single
-# factor has one slug; a composite lists its constituents, ensembled below.
-FACTOR_PORTFOLIOS = ['momentum.40']
-FACTOR_LABEL = "Momentum"
+# Published portfolio slug(s) whose returns make up the sleeve. One slug for a
+# single factor; list several to blend them (equal-weight) into one sleeve.
+FACTOR_PORTFOLIOS = ['retail_flow.40']
+FACTOR_LABEL = "Retail Flow"
 # Your own daily return series (a `date,return` CSV). None -> synthetic demo book.
 EXISTING_PORTFOLIO_RETURNS_CSV = None
 # Fraction of the book reallocated into the factor sleeve.
@@ -186,7 +191,7 @@ print(
 # %% [markdown]
 # ### The factor sleeve
 #
-# The sleeve is the published, unlevered (1x) daily returns of the **Momentum** top-40 portfolio.
+# The sleeve is the published, unlevered (1x) daily returns of the **Retail Flow** top-40 portfolio.
 
 # %%
 # Fetch each constituent portfolio's published returns and equal-weight them.
@@ -278,6 +283,6 @@ plot_cumulative_and_drawdown(
 # - Create an account and generate an API key at
 #   [factors.aperiodic.io](https://factors.aperiodic.io)
 # - This factor's factsheet:
-#   [factors.aperiodic.io/catalog/momentum](https://factors.aperiodic.io/catalog/momentum)
+#   [factors.aperiodic.io/catalog/retail_flow](https://factors.aperiodic.io/catalog/retail_flow)
 # - Licensing & data access:
 #   [factors.aperiodic.io/booking](https://factors.aperiodic.io/booking)

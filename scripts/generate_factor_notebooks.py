@@ -15,11 +15,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from scripts.factors_catalog import (
-    Factor,
-    load_composite_portfolios,
-    load_factors,
-)
+from scripts.factors_catalog import Factor, find_factor, load_factors
 from scripts.redact_secrets import collect_secrets, redact_file
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -27,6 +23,11 @@ NOTEBOOKS_DIR = REPO_ROOT / "notebooks"
 SRC_DIR = NOTEBOOKS_DIR / "src"
 # 00_ prefix sorts the cross-factor overview above every factor_analysis_*.
 CORRELATION_STEM = "00_factor_returns_correlation"
+# A single, factor-agnostic "add a factor to your book" notebook (parameterized
+# via FACTOR_PORTFOLIOS). Generated once for a default example factor -- the
+# composite "build from scratch" case is the multi-factor notebook's job.
+INTEGRATION_STEM = "portfolio_integration"
+_INTEGRATION_DEFAULT_ID = "retail_flow"
 
 _GENERATED_BANNER = (
     "# AUTO-GENERATED from scripts/factors_catalog.py by\n"
@@ -206,32 +207,33 @@ plt.show()
 # %%
 '''
 
-# One-sentence description of the sleeve for cell 8, chosen per factor kind.
+# One-sentence description of the sleeve for cell 8.
 _SINGLE_SLEEVE_NOTE = (
     "The sleeve is the published, unlevered (1x) daily returns of the "
     "**{name}** top-40 portfolio."
 )
-_COMPOSITE_SLEEVE_NOTE = (
-    "**{name}** is reconstructed client-side as the equal-weight average of its "
-    "{count} constituents' published portfolio returns -- the single-portfolio "
-    "endpoint does not serve the composite directly."
-)
 
-# "How do I add this factor to a portfolio I already run?" Fetches the factor's
-# published portfolio returns (a composite ensembles its constituents), blends
-# them with an existing book, and reports correlation + before/after stats.
-# Targets prospects, so it carries its own pip cell (Colab / standalone).
+# A single, factor-agnostic "how do I add this factor to a portfolio I already
+# run?" notebook. Generated once for a default example factor; edit
+# FACTOR_PORTFOLIOS to run it for any other factor (or a basket of them). It
+# fetches the published portfolio returns, blends them with an existing book,
+# and reports correlation + before/after stats. Targets prospects, so it carries
+# its own pip cell (Colab / standalone).
 #
 # .format()-ed like the templates above: every literal brace in the code below
 # is doubled; the only fields are {banner} {name} {id} {factor_portfolios}
 # {sleeve_note}.
 _INTEGRATION_TEMPLATE = '''# %% [markdown]
-# # Adding {name} to an existing portfolio
+# # Adding a factor to an existing portfolio
 #
-# This notebook measures what a **{name}** sleeve does to a book you already
-# run: how correlated the two are, and how the blend's risk and return compare
-# before and after. Portfolios are the published **Top-40, unlevered (1x)**
-# returns.
+# This notebook measures what adding a single factor's sleeve does to a book you
+# already run: how correlated the two are, and how the blend's risk and return
+# compare before and after. Portfolios are the published **Top-40, unlevered
+# (1x)** returns.
+#
+# The example below uses **{name}** -- change `FACTOR_PORTFOLIOS` and
+# `FACTOR_LABEL` in the parameters to run it for any other factor in the
+# [catalog](https://factors.aperiodic.io/catalog).
 #
 # **Prerequisites: none** -- runs on the shared public demo key (preview data);
 # set `APERIODIC_API_KEY` for full data.
@@ -316,8 +318,9 @@ def plot_cumulative_and_drawdown(series_by_label: dict) -> None:
 # - **APERIODIC_API_KEY** -- optional. Falls back to a Google Colab secret, then
 #   a local `.env` / environment variable, then the shared public **demo key**
 #   (preview data), so the notebook runs as-is.
-# - **FACTOR_PORTFOLIOS** -- the published portfolio slug(s) that make up the
-#   sleeve: one for a single factor, the constituents for a composite.
+# - **FACTOR_PORTFOLIOS** / **FACTOR_LABEL** -- the published portfolio slug(s)
+#   to add as a sleeve (one for a single factor, or several to blend a basket
+#   into one sleeve), and the display label to show for it.
 # - **EXISTING_PORTFOLIO_RETURNS_CSV** -- path or URL to your own daily
 #   `date,return` CSV. `None` blends against a synthetic demo book instead.
 # - **ALLOCATION** -- the fraction of the book reallocated into the sleeve.
@@ -347,8 +350,8 @@ else:
 import aperiodic_factors as aperiodic
 from aperiodic_factors import get_portfolio_returns
 
-# Published portfolio slug(s) whose returns make up the factor sleeve. A single
-# factor has one slug; a composite lists its constituents, ensembled below.
+# Published portfolio slug(s) whose returns make up the sleeve. One slug for a
+# single factor; list several to blend them (equal-weight) into one sleeve.
 FACTOR_PORTFOLIOS = {factor_portfolios}
 FACTOR_LABEL = "{name}"
 # Your own daily return series (a `date,return` CSV). None -> synthetic demo book.
@@ -525,17 +528,13 @@ def _factor_table(factors: list[Factor]) -> str:
         f"| [{f.name}]({f.detail_url}) "
         f"| [PDF](factsheets/{f.id}.pdf) "
         f"| [notebook](notebooks/factor_analysis_{f.id}.ipynb) "
-        f"| [notebook](notebooks/portfolio_integration_{f.id}.ipynb) "
         f"| [CSV]({f.factor_data_csv_url}) "
         f"| [CSV]({f.returns_csv_url}) |"
         for f in factors
     )
-    # Repo-relative links (like the Notebook column) -- not the absolute
-    # GITHUB_BLOB_BASE, which still points at the repo's old `dataroom` name.
     return (
-        "| Factor | Factsheet | Notebook | Add to your portfolio "
-        "| Raw factor data | Portfolio returns |\n"
-        "| --- | --- | --- | --- | --- | --- |\n"
+        "| Factor | Factsheet | Notebook | Raw factor data | Portfolio returns |\n"
+        "| --- | --- | --- | --- | --- |\n"
         f"{rows}"
     )
 
@@ -548,25 +547,27 @@ def update_root_readme(factors: list[Factor]) -> None:
     print("  updated README.md factor table")
 
 
-def _write_integration_script(
-    factor: Factor, factor_portfolios: list[str], sleeve_note: str
-) -> Path:
-    """Render one portfolio-integration notebook src and return its path."""
-    path = SRC_DIR / f"portfolio_integration_{factor.id}.py"
+def _write_integration_script(factor: Factor) -> Path:
+    """Render the single portfolio-integration notebook src and return its path.
+
+    Generated once for a default example ``factor``; the notebook is
+    parameterized, so a reader edits FACTOR_PORTFOLIOS to run it for any other
+    factor (or a basket of slugs)."""
+    path = SRC_DIR / f"{INTEGRATION_STEM}.py"
     _write(
         path,
         _INTEGRATION_TEMPLATE.format(
             banner=_GENERATED_BANNER.rstrip(),
             name=factor.name,
             id=factor.id,
-            factor_portfolios=repr(factor_portfolios),
-            sleeve_note=sleeve_note,
+            factor_portfolios=repr([factor.portfolio_id]),
+            sleeve_note=_SINGLE_SLEEVE_NOTE.format(name=factor.name),
         ),
     )
     return path
 
 
-def write_scripts(factors: list[Factor], composites: list[Factor]) -> list[Path]:
+def write_scripts(factors: list[Factor]) -> list[Path]:
     SRC_DIR.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
@@ -585,41 +586,10 @@ def write_scripts(factors: list[Factor], composites: list[Factor]) -> list[Path]
         )
         written.append(path)
 
-        # Portfolio-integration notebook ("how do I add it to my book?"). A
-        # single factor's sleeve is just its own published portfolio.
-        written.append(
-            _write_integration_script(
-                factor,
-                factor_portfolios=[factor.portfolio_id],
-                sleeve_note=_SINGLE_SLEEVE_NOTE.format(name=factor.name),
-            )
-        )
-
-    # Composite portfolios get an integration notebook only: the sleeve is the
-    # equal-weight ensemble of the constituents' published returns (the single-
-    # portfolio endpoint does not serve a composite slug). Resolve constituent
-    # ids to slugs against the full single-factor catalog, not any argv subset.
-    slug_by_id = {f.id: f.portfolio_id for f in load_factors()}
-    for composite in composites:
-        # load_composite_portfolios() already validated the constituents; fail
-        # loudly on any residual miss rather than silently shipping a partial
-        # composite (or, on a full regen, pruning its externally-linked notebook).
-        missing = [c for c in composite.constituents if c not in slug_by_id]
-        if missing:
-            raise SystemExit(
-                f"composite {composite.id!r}: constituents absent from catalog: "
-                f"{sorted(missing)}"
-            )
-        constituent_slugs = [slug_by_id[c] for c in composite.constituents]
-        written.append(
-            _write_integration_script(
-                composite,
-                factor_portfolios=constituent_slugs,
-                sleeve_note=_COMPOSITE_SLEEVE_NOTE.format(
-                    name=composite.name, count=len(constituent_slugs)
-                ),
-            )
-        )
+    # A single, factor-agnostic "add a factor to your book" notebook, generated
+    # for one default example factor. Always emitted (like the correlation
+    # notebook and README), regardless of any per-factor subset on argv.
+    written.append(_write_integration_script(find_factor(_INTEGRATION_DEFAULT_ID)))
 
     # The correlation notebook and the README table always cover the full
     # catalog, regardless of any per-factor subset passed on argv.
@@ -641,8 +611,11 @@ def prune_stale(keep: set[str]) -> None:
     so a full regen is authoritative. Only touches files we generate."""
     managed = list(NOTEBOOKS_DIR.glob("factor_analysis_*.ipynb"))
     managed += list(SRC_DIR.glob("factor_analysis_*.py"))
-    managed += list(NOTEBOOKS_DIR.glob("portfolio_integration_*.ipynb"))
-    managed += list(SRC_DIR.glob("portfolio_integration_*.py"))
+    # `portfolio_integration*` (no trailing underscore) covers both the current
+    # single notebook and the retired per-factor `portfolio_integration_<id>`
+    # family, so a full regen prunes the latter.
+    managed += list(NOTEBOOKS_DIR.glob("portfolio_integration*.ipynb"))
+    managed += list(SRC_DIR.glob("portfolio_integration*.py"))
     managed += [NOTEBOOKS_DIR / f"{CORRELATION_STEM}.ipynb"]
     managed += [SRC_DIR / f"{CORRELATION_STEM}.py"]
     for path in managed:
@@ -724,23 +697,15 @@ def main(argv: list[str]) -> None:
     wanted = [a for a in argv if not a.startswith("--")]
 
     factors = load_factors()
-    composites = load_composite_portfolios()
     if wanted:
-        wanted_set = set(wanted)
-        selected_factors = [f for f in factors if f.id in wanted_set]
-        selected_composites = [c for c in composites if c.id in wanted_set]
-        known = {f.id for f in selected_factors} | {c.id for c in selected_composites}
-        missing = wanted_set - known
+        selected = [f for f in factors if f.id in set(wanted)]
+        missing = set(wanted) - {f.id for f in selected}
         if missing:
             raise SystemExit(f"Unknown factor ids: {sorted(missing)}")
-        factors = selected_factors
-        composites = selected_composites
+        factors = selected
 
-    print(
-        f"Generating notebooks for {len(factors)} factor(s) "
-        f"and {len(composites)} composite(s):"
-    )
-    scripts = write_scripts(factors, composites)
+    print(f"Generating notebooks for {len(factors)} factor(s):")
+    scripts = write_scripts(factors)
 
     if not wanted:  # full regen is authoritative -- drop anything stale
         prune_stale({p.stem for p in scripts})

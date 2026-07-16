@@ -9,7 +9,7 @@ fails loudly rather than falling back to any local/stale copy.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -37,8 +37,6 @@ class Factor:
     short_description: str
     long_description: str
     effect: str = ""
-    # Constituent factor ids, for composite portfolios only (empty for singles).
-    constituents: tuple[str, ...] = ()
 
     @property
     def detail_url(self) -> str:
@@ -84,13 +82,8 @@ def _read_catalog_bundle() -> dict:
         ) from exc
 
 
-@lru_cache(maxsize=1)
 def _load_catalog() -> list[dict]:
-    """Return the list of factor dicts from the published catalog bundle.
-
-    Cached so a single generator run -- which reads the catalog via both
-    ``_factors()`` and ``load_composite_portfolios()`` -- fetches it once and
-    both views stay consistent."""
+    """Return the list of factor dicts from the published catalog bundle."""
     bundle = _read_catalog_bundle()
 
     try:
@@ -137,24 +130,6 @@ def _is_composite(factor: Factor) -> bool:
     )
 
 
-# The deployed catalog.json does not yet publish a composite's constituent
-# factors, so map them here as a fallback until it does. Keep in sync with
-# `apps/factors/config/catalog.config.ts` in `dream-faster/unravel-router`.
-# `load_composite_portfolios()` prefers a `constituents` field on the catalog
-# entry when present, so this table self-heals once the web app publishes it.
-_COMPOSITE_CONSTITUENTS: dict[str, tuple[str, ...]] = {
-    "composite-7": (
-        "momentum_enhanced",
-        "carry_enhanced",
-        "retail_flow",
-        "margin_risk",
-        "altair",
-        "mean_reversion",
-        "mean_reversion_enhanced",
-    ),
-}
-
-
 @lru_cache(maxsize=1)
 def _factors() -> tuple[Factor, ...]:
     return tuple(
@@ -166,65 +141,6 @@ def _factors() -> tuple[Factor, ...]:
 
 def load_factors() -> list[Factor]:
     return list(_factors())
-
-
-def load_composite_portfolios() -> list[Factor]:
-    """Composite portfolios (e.g. the 7 Factor Composite), which ``load_factors``
-    deliberately excludes.
-
-    Each returned ``Factor`` carries its ``constituents`` as canonical
-    single-factor ids so callers can reconstruct the composite client-side from
-    those factors' published portfolio returns -- the single-portfolio API does
-    not serve a composite slug directly (``get_portfolio_returns(id=
-    "composite-7.40")`` 400s).
-
-    Constituents come from the catalog entry's ``constituents`` field when it is
-    published, otherwise from the ``_COMPOSITE_CONSTITUENTS`` fallback. Each is
-    accepted as either a factor id (``momentum_enhanced``) or a portfolio slug
-    (``momentum_enhanced.40``) -- catalog.json may publish either -- and
-    normalized to the id. A composite whose declared constituents do not all
-    resolve raises loudly (a wrong-shaped or renamed constituent must not
-    silently ship a partial composite, nor let a full regen prune its
-    externally-linked notebook). A composite with no declared constituents at
-    all is skipped with a warning.
-    """
-    singles = _factors()
-    id_by_ref: dict[str, str] = {}
-    for single in singles:
-        id_by_ref[single.id] = single.id
-        id_by_ref[single.portfolio_id] = single.id  # slug -> id
-
-    def _canonical_id(ref: str) -> str | None:
-        if ref in id_by_ref:
-            return id_by_ref[ref]
-        # A slug is "<id>.<universe>"; ids never contain a dot, so strip a
-        # trailing suffix and retry (handles a slug for a universe we don't stock).
-        return id_by_ref.get(ref.rsplit(".", 1)[0])
-
-    composites: list[Factor] = []
-    for entry in _load_catalog():
-        factor = _build_factor(entry)
-        if not _is_composite(factor):
-            continue
-        declared = tuple(
-            entry.get("constituents") or _COMPOSITE_CONSTITUENTS.get(factor.id, ())
-        )
-        if not declared:
-            print(
-                f"  skipping composite {factor.id!r}: no known constituents "
-                "(add them to _COMPOSITE_CONSTITUENTS or publish them in catalog.json)"
-            )
-            continue
-        resolved = tuple(_canonical_id(ref) for ref in declared)
-        unknown = [ref for ref, cid in zip(declared, resolved) if cid is None]
-        if unknown:
-            raise SystemExit(
-                f"composite {factor.id!r}: unresolvable constituents {sorted(unknown)} "
-                f"-- expected single-factor ids or slugs from "
-                f"{sorted(single.id for single in singles)}"
-            )
-        composites.append(replace(factor, constituents=resolved))
-    return composites
 
 
 def find_factor(factor_id: str) -> Factor:
