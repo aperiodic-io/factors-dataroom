@@ -238,6 +238,16 @@ _INTEGRATION_TEMPLATE = '''# %% [markdown]
 #
 # Licence: MIT
 
+# %%
+# Install the notebook's full dependency closure first, so it is self-contained
+# when run standalone (e.g. Google Colab). This must precede the collapsed
+# helper cell below, whose imports (matplotlib / numpy / pandas / dotenv) would
+# otherwise fail on a fresh environment. `pip install -r requirements.txt` (see
+# the README) already covers this if you cloned the repo.
+import sys
+
+!{{sys.executable}} -m pip install -q aperiodic-factors python-dotenv matplotlib numpy pandas
+
 # %% tags=["hide-input"] jupyter={{"source_hidden": true}}
 {banner}
 # --- Utility functions (inlined so this notebook is self-contained). ---
@@ -299,14 +309,6 @@ def plot_cumulative_and_drawdown(series_by_label: dict) -> None:
     ax_dd.axhline(0, color="black", linewidth=0.8)
     fig.tight_layout()
     plt.show()
-
-# %%
-# Install the Aperiodic Factors client (https://pypi.org/project/aperiodic-factors/).
-# `pip install -r requirements.txt` (see the README) already does this; this cell
-# makes the notebook self-contained when run standalone (e.g. Google Colab).
-import sys
-
-!{{sys.executable}} -m pip install -q aperiodic-factors
 
 # %% [markdown]
 # ### Parameters
@@ -392,7 +394,13 @@ else:
         .apply(pd.to_numeric, errors="coerce")
         .pct_change()
     )
-    existing = (asset_returns * DEMO_WEIGHTS).sum(axis=1)
+    # min_count so a day missing a ticker (or the first, price-less day) stays
+    # NaN and is dropped, rather than silently collapsing to a reweighted book.
+    existing = (
+        (asset_returns * DEMO_WEIGHTS)
+        .sum(axis=1, min_count=len(DEMO_WEIGHTS))
+        .dropna()
+    )
     existing.name = "Existing book (demo 60/40 BTC-ETH)"
 
 existing = existing[existing.index >= pd.Timestamp(START_DATE)]
@@ -416,7 +424,10 @@ parts = {{
     )
     for pid in FACTOR_PORTFOLIOS
 }}
-sleeve = pd.DataFrame(parts).mean(axis=1)
+# dropna() before the mean so the sleeve only spans dates where *every*
+# constituent has published returns; otherwise a partial row would silently
+# become an equal-weight average of fewer factors than advertised.
+sleeve = pd.DataFrame(parts).dropna().mean(axis=1)
 sleeve.name = FACTOR_LABEL
 
 # Inner-join the sleeve to the book on their shared trading days, then clip to
@@ -486,8 +497,9 @@ plot_cumulative_and_drawdown(
 # your book doesn't already own. Most teams start at a **10-25%** allocation and
 # size from there.
 #
-# These figures run on the shared public **demo key**, which serves **preview
-# data**; sign up for a key to work with the full history.
+# The committed copy of this notebook is rendered against the full dataset. Run
+# it yourself and it works out of the box on the shared public **demo key**,
+# which serves **preview data**; sign up for a key to work with the full history.
 #
 # - Create an account and generate an API key at
 #   [factors.aperiodic.io](https://factors.aperiodic.io)
@@ -589,12 +601,16 @@ def write_scripts(factors: list[Factor], composites: list[Factor]) -> list[Path]
     # ids to slugs against the full single-factor catalog, not any argv subset.
     slug_by_id = {f.id: f.portfolio_id for f in load_factors()}
     for composite in composites:
-        constituent_slugs = [
-            slug_by_id[c] for c in composite.constituents if c in slug_by_id
-        ]
-        if not constituent_slugs:
-            print(f"  skipping {composite.id}: no resolvable constituent slugs")
-            continue
+        # load_composite_portfolios() already validated the constituents; fail
+        # loudly on any residual miss rather than silently shipping a partial
+        # composite (or, on a full regen, pruning its externally-linked notebook).
+        missing = [c for c in composite.constituents if c not in slug_by_id]
+        if missing:
+            raise SystemExit(
+                f"composite {composite.id!r}: constituents absent from catalog: "
+                f"{sorted(missing)}"
+            )
+        constituent_slugs = [slug_by_id[c] for c in composite.constituents]
         written.append(
             _write_integration_script(
                 composite,

@@ -84,8 +84,13 @@ def _read_catalog_bundle() -> dict:
         ) from exc
 
 
+@lru_cache(maxsize=1)
 def _load_catalog() -> list[dict]:
-    """Return the list of factor dicts from the published catalog bundle."""
+    """Return the list of factor dicts from the published catalog bundle.
+
+    Cached so a single generator run -- which reads the catalog via both
+    ``_factors()`` and ``load_composite_portfolios()`` -- fetches it once and
+    both views stay consistent."""
     bundle = _read_catalog_bundle()
 
     try:
@@ -167,30 +172,58 @@ def load_composite_portfolios() -> list[Factor]:
     """Composite portfolios (e.g. the 7 Factor Composite), which ``load_factors``
     deliberately excludes.
 
-    Each returned ``Factor`` carries its ``constituents`` (single-factor ids) so
-    callers can reconstruct the composite client-side from those factors'
-    published portfolio returns -- the single-portfolio API does not serve a
-    composite slug directly (``get_portfolio_returns(id="composite-7.40")`` 400s).
+    Each returned ``Factor`` carries its ``constituents`` as canonical
+    single-factor ids so callers can reconstruct the composite client-side from
+    those factors' published portfolio returns -- the single-portfolio API does
+    not serve a composite slug directly (``get_portfolio_returns(id=
+    "composite-7.40")`` 400s).
 
     Constituents come from the catalog entry's ``constituents`` field when it is
-    published, otherwise from the ``_COMPOSITE_CONSTITUENTS`` fallback. A
-    composite with no known constituents is skipped with a warning.
+    published, otherwise from the ``_COMPOSITE_CONSTITUENTS`` fallback. Each is
+    accepted as either a factor id (``momentum_enhanced``) or a portfolio slug
+    (``momentum_enhanced.40``) -- catalog.json may publish either -- and
+    normalized to the id. A composite whose declared constituents do not all
+    resolve raises loudly (a wrong-shaped or renamed constituent must not
+    silently ship a partial composite, nor let a full regen prune its
+    externally-linked notebook). A composite with no declared constituents at
+    all is skipped with a warning.
     """
+    singles = _factors()
+    id_by_ref: dict[str, str] = {}
+    for single in singles:
+        id_by_ref[single.id] = single.id
+        id_by_ref[single.portfolio_id] = single.id  # slug -> id
+
+    def _canonical_id(ref: str) -> str | None:
+        if ref in id_by_ref:
+            return id_by_ref[ref]
+        # A slug is "<id>.<universe>"; ids never contain a dot, so strip a
+        # trailing suffix and retry (handles a slug for a universe we don't stock).
+        return id_by_ref.get(ref.rsplit(".", 1)[0])
+
     composites: list[Factor] = []
     for entry in _load_catalog():
         factor = _build_factor(entry)
         if not _is_composite(factor):
             continue
-        constituents = tuple(
+        declared = tuple(
             entry.get("constituents") or _COMPOSITE_CONSTITUENTS.get(factor.id, ())
         )
-        if not constituents:
+        if not declared:
             print(
                 f"  skipping composite {factor.id!r}: no known constituents "
                 "(add them to _COMPOSITE_CONSTITUENTS or publish them in catalog.json)"
             )
             continue
-        composites.append(replace(factor, constituents=constituents))
+        resolved = tuple(_canonical_id(ref) for ref in declared)
+        unknown = [ref for ref, cid in zip(declared, resolved) if cid is None]
+        if unknown:
+            raise SystemExit(
+                f"composite {factor.id!r}: unresolvable constituents {sorted(unknown)} "
+                f"-- expected single-factor ids or slugs from "
+                f"{sorted(single.id for single in singles)}"
+            )
+        composites.append(replace(factor, constituents=resolved))
     return composites
 
 
