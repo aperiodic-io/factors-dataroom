@@ -9,7 +9,7 @@ fails loudly rather than falling back to any local/stale copy.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -37,6 +37,8 @@ class Factor:
     short_description: str
     long_description: str
     effect: str = ""
+    # Constituent factor ids, for composite portfolios only (empty for singles).
+    constituents: tuple[str, ...] = ()
 
     @property
     def detail_url(self) -> str:
@@ -130,6 +132,24 @@ def _is_composite(factor: Factor) -> bool:
     )
 
 
+# The deployed catalog.json does not yet publish a composite's constituent
+# factors, so map them here as a fallback until it does. Keep in sync with
+# `apps/factors/config/catalog.config.ts` in `dream-faster/unravel-router`.
+# `load_composite_portfolios()` prefers a `constituents` field on the catalog
+# entry when present, so this table self-heals once the web app publishes it.
+_COMPOSITE_CONSTITUENTS: dict[str, tuple[str, ...]] = {
+    "composite-7": (
+        "momentum_enhanced",
+        "carry_enhanced",
+        "retail_flow",
+        "margin_risk",
+        "altair",
+        "mean_reversion",
+        "mean_reversion_enhanced",
+    ),
+}
+
+
 @lru_cache(maxsize=1)
 def _factors() -> tuple[Factor, ...]:
     return tuple(
@@ -141,6 +161,37 @@ def _factors() -> tuple[Factor, ...]:
 
 def load_factors() -> list[Factor]:
     return list(_factors())
+
+
+def load_composite_portfolios() -> list[Factor]:
+    """Composite portfolios (e.g. the 7 Factor Composite), which ``load_factors``
+    deliberately excludes.
+
+    Each returned ``Factor`` carries its ``constituents`` (single-factor ids) so
+    callers can reconstruct the composite client-side from those factors'
+    published portfolio returns -- the single-portfolio API does not serve a
+    composite slug directly (``get_portfolio_returns(id="composite-7.40")`` 400s).
+
+    Constituents come from the catalog entry's ``constituents`` field when it is
+    published, otherwise from the ``_COMPOSITE_CONSTITUENTS`` fallback. A
+    composite with no known constituents is skipped with a warning.
+    """
+    composites: list[Factor] = []
+    for entry in _load_catalog():
+        factor = _build_factor(entry)
+        if not _is_composite(factor):
+            continue
+        constituents = tuple(
+            entry.get("constituents") or _COMPOSITE_CONSTITUENTS.get(factor.id, ())
+        )
+        if not constituents:
+            print(
+                f"  skipping composite {factor.id!r}: no known constituents "
+                "(add them to _COMPOSITE_CONSTITUENTS or publish them in catalog.json)"
+            )
+            continue
+        composites.append(replace(factor, constituents=constituents))
+    return composites
 
 
 def find_factor(factor_id: str) -> Factor:
