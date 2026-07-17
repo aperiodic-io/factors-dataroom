@@ -109,7 +109,7 @@ jobs:
           jupyter nbconvert --to notebook --execute --inplace \
             --ExecutePreprocessor.kernel_name=python3 \
             --ExecutePreprocessor.timeout=1800 \
-            notebooks/portfolio_integration.ipynb
+            notebooks/00_portfolio_integration.ipynb
 
       - name: Redact any leaked secrets from notebooks
         if: always()

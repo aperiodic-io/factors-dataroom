@@ -23,7 +23,7 @@ The factors are meant to be combined into multi-factor portfolios — see how yo
 can do that in [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb),
 whose default parameters reconstruct the **7 Factor Composite (AF-COMP)**. To see
 what folding one more factor into an existing multi-factor book does, see
-[Portfolio Integration](notebooks/portfolio_integration.ipynb): it builds the
+[Portfolio Integration](notebooks/00_portfolio_integration.ipynb): it builds the
 book the same way, then reports the added factor's correlation to it and the
 before/after performance — by default a six-factor book plus **Retail Flow**
 (i.e. reconstructing AF-COMP).
