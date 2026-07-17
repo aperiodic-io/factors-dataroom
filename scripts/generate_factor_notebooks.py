@@ -23,9 +23,6 @@ NOTEBOOKS_DIR = REPO_ROOT / "notebooks"
 SRC_DIR = NOTEBOOKS_DIR / "src"
 # 00_ prefix sorts the cross-factor overview above every factor_analysis_*.
 CORRELATION_STEM = "00_factor_returns_correlation"
-# A single, factor-agnostic "add a factor to your book" notebook (parameterized
-# via FACTOR_PORTFOLIOS). Generated once for a default example factor -- the
-# composite "build from scratch" case is the multi-factor notebook's job.
 INTEGRATION_STEM = "portfolio_integration"
 _INTEGRATION_DEFAULT_ID = "retail_flow"
 
@@ -213,13 +210,6 @@ _SINGLE_SLEEVE_NOTE = (
     "**{name}** top-40 portfolio."
 )
 
-# A single, factor-agnostic "how do I add this factor to a portfolio I already
-# run?" notebook. Generated once for a default example factor; edit
-# FACTOR_PORTFOLIOS to run it for any other factor (or a basket of them). It
-# fetches the published portfolio returns, blends them with an existing book,
-# and reports correlation + before/after stats. Targets prospects, so it carries
-# its own pip cell (Colab / standalone).
-#
 # .format()-ed like the templates above: every literal brace in the code below
 # is doubled; the only fields are {banner} {name} {id} {factor_portfolios}
 # {sleeve_note}.
