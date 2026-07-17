@@ -21,11 +21,12 @@ raw factor data — a quick read on how the individual factors relate to one ano
 
 The factors are meant to be combined into multi-factor portfolios — see how you
 can do that in [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb),
-whose default parameters reconstruct the **7 Factor Composite (AF-COMP)**. To add
-a single factor as a sleeve on top of a book you already run, see
-[Portfolio Integration](notebooks/portfolio_integration.ipynb) — a parameterized
-notebook that blends any factor's published returns into your existing book and
-reports the correlation and before/after performance.
+whose default parameters reconstruct the **7 Factor Composite (AF-COMP)**. To see
+what folding one more factor into an existing multi-factor book does, see
+[Portfolio Integration](notebooks/portfolio_integration.ipynb): it builds the
+book the same way, then reports the added factor's correlation to it and the
+before/after performance — by default a six-factor book plus **Retail Flow**
+(i.e. reconstructing AF-COMP).
 
 Each factor links to its detail page on our site, a PDF factsheet, the
 AlphaLens notebook, and the underlying data (returns and raw factor data):

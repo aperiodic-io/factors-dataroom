@@ -99,6 +99,18 @@ jobs:
             --ExecutePreprocessor.timeout=1800 \
             notebooks/00_multi_factor_portfolio_construction.ipynb
 
+      - name: Execute the portfolio-integration notebook
+        # Also hand-maintained (self-contained, no src). Executed in a separate
+        # always() step so it runs against the live API regardless of the
+        # multi-factor notebook's result; the commit / PR steps stage all of
+        # notebooks/.
+        if: always()
+        run: |
+          jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.kernel_name=python3 \
+            --ExecutePreprocessor.timeout=1800 \
+            notebooks/portfolio_integration.ipynb
+
       - name: Redact any leaked secrets from notebooks
         if: always()
         run: python -m scripts.redact_secrets notebooks/*.ipynb
