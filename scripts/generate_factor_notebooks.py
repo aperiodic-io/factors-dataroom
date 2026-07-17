@@ -30,7 +30,15 @@ _GENERATED_BANNER = (
     "# scripts/generate_factor_notebooks.py -- do not edit by hand.\n"
 )
 
-_FACTOR_TEMPLATE = '''# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
+_FACTOR_TEMPLATE = '''# %%
+# Install the packages this notebook needs. `pip install -r requirements.txt`
+# (see the README) already does this for you; this cell makes the notebook
+# self-contained if you're running it standalone (e.g. in Google Colab).
+import sys
+
+!{{sys.executable}} -m pip install -q aperiodic-factors alphalens-reloaded python-dotenv pandas
+
+# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
 {banner}
 # --- Utility functions (inlined so this notebook is self-contained). ---
 # This cell is collapsed by default when the notebook is rendered; expand it to
@@ -124,7 +132,15 @@ factor_analysis(restricted_factors[columns_intersection], underlying)
 # %%
 '''
 
-_CORRELATION_TEMPLATE = '''# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
+_CORRELATION_TEMPLATE = '''# %%
+# Install the packages this notebook needs. `pip install -r requirements.txt`
+# (see the README) already does this for you; this cell makes the notebook
+# self-contained if you're running it standalone (e.g. in Google Colab).
+import sys
+
+!{{sys.executable}} -m pip install -q aperiodic-factors python-dotenv requests matplotlib pandas seaborn
+
+# %% tags=["hide-input"] jupyter={{"source_hidden": true}}
 {banner}
 # --- Utility functions (inlined so this notebook is self-contained). ---
 # This cell is collapsed by default when the notebook is rendered; expand it to
