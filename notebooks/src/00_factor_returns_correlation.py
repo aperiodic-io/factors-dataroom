@@ -1,3 +1,11 @@
+# %%
+# Install the packages this notebook needs. `pip install -r requirements.txt`
+# (see the README) already does this for you; this cell makes the notebook
+# self-contained if you're running it standalone (e.g. in Google Colab).
+import sys
+
+!{sys.executable} -m pip install -q aperiodic-factors python-dotenv requests matplotlib pandas seaborn
+
 # %% tags=["hide-input"] jupyter={"source_hidden": true}
 # AUTO-GENERATED from scripts/factors_catalog.py by
 # scripts/generate_factor_notebooks.py -- do not edit by hand.
