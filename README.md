@@ -25,8 +25,7 @@ whose default parameters reconstruct the **7 Factor Composite (AF-COMP)**. To se
 what folding one more factor into an existing multi-factor book does, see
 [Portfolio Integration](notebooks/00_portfolio_integration.ipynb): it builds the
 book the same way, then reports the added factor's correlation to it and the
-before/after performance — by default a six-factor book plus **Retail Flow**
-(i.e. reconstructing AF-COMP).
+before/after performance — by default a small two-factor book plus **Retail Flow**.
 
 Each factor links to its detail page on our site, a PDF factsheet, the
 AlphaLens notebook, and the underlying data (returns and raw factor data):
