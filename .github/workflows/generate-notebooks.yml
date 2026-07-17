@@ -9,17 +9,21 @@ on:
   # Regenerate + execute the notebooks whenever a generation *input* changes.
   # On main this opens a refresh PR (see the create-pull-request step below); on
   # any other branch it commits the executed notebooks straight back to that
-  # branch, updating its PR. Scoped to the inputs (sources / scripts / deps) so a
-  # data-only or factsheet commit doesn't rebuild the notebooks -- and so the
-  # workflow's own commit-back, which only touches the .ipynb outputs, does not
-  # re-trigger it. (The commit-back is also pushed with GITHUB_TOKEN, whose
-  # pushes never start a new workflow run, so this cannot loop.)
+  # branch, updating its PR. Scoped to the inputs: the generated notebooks'
+  # sources (notebooks/src, scripts, deps) plus the two hand-maintained notebooks,
+  # whose source lives in the .ipynb itself so an edit to one must re-execute it.
+  # A data-only or factsheet commit touches none of these paths, so it doesn't
+  # rebuild the notebooks. The workflow's own commit-back can't loop even though
+  # it now touches push-path files: it is pushed with GITHUB_TOKEN, whose pushes
+  # never start a new workflow run.
   push:
     branches:
       - '**'
       - '!automation/**'
     paths:
       - 'notebooks/src/**'
+      - 'notebooks/00_multi_factor_portfolio_construction.ipynb'
+      - 'notebooks/00_portfolio_integration.ipynb'
       - 'scripts/**'
       - 'requirements.txt'
       - '.github/workflows/generate-notebooks.yml'
@@ -139,7 +143,12 @@ jobs:
           if-no-files-found: ignore
 
       - name: Commit executed notebooks back to the branch
-        if: ${{ always() && github.event_name == 'push' && github.ref_name != 'main' }}
+        # Any trigger on a non-main branch (push OR manual workflow_dispatch)
+        # commits the executed notebooks straight back to that branch. Keyed on
+        # the branch, not the event, so a manual re-run of a feature branch
+        # refreshes it in place instead of failing at the create-PR step (which
+        # only makes sense against main).
+        if: ${{ always() && github.ref_name != 'main' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -163,7 +172,9 @@ jobs:
 
       - name: Open PR with refreshed notebooks
         id: cpr
-        if: ${{ success() && (github.event_name != 'push' || github.ref_name == 'main') }}
+        # Only on main: a refresh there lands via PR (schedule auto-merges it
+        # below). Feature branches never reach here -- they commit back above.
+        if: ${{ success() && github.ref_name == 'main' }}
         uses: peter-evans/create-pull-request@v6
         with:
           base: main
