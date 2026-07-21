@@ -69,9 +69,11 @@ against a shared public demo key, so no signup or configuration is required.
 `requirements.txt` installs the client straight from PyPI
 ([`aperiodic-factors`](https://pypi.org/project/aperiodic-factors/)).
 
-For full (non-preview) data, sign up at
-[factors.aperiodic.io](https://factors.aperiodic.io), generate an API key in
-your API settings, and make it available to the notebooks:
+For full (non-preview) data, get in touch with the Aperiodic team to be
+onboarded — we provision an API key for you (there is no self-serve signup).
+Book an intro at
+[factors.aperiodic.io/booking](https://factors.aperiodic.io/booking). Once you
+have a key, make it available to the notebooks:
 
 ```bash
 export APERIODIC_API_KEY="your_api_key_here"   # or put it in a .env file
