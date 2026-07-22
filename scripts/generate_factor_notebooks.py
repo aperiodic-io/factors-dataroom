@@ -51,8 +51,9 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # The factors API serves preview data against a shared public demo key, so the
-# notebook runs out-of-the-box with no signup. Export APERIODIC_API_KEY (or set
-# it in a .env file) to query with your own key for full access.
+# notebook runs out-of-the-box with no signup. For full data the Aperiodic team
+# provisions a key for you (factors.aperiodic.io/booking); once you have it,
+# export APERIODIC_API_KEY (or set it in a .env file).
 DEMO_API_KEY = "DEMO-KEY"
 
 
@@ -152,8 +153,9 @@ import requests
 from dotenv import load_dotenv
 
 # The factors API serves preview data against a shared public demo key, so the
-# notebook runs out-of-the-box with no signup. Export APERIODIC_API_KEY (or set
-# it in a .env file) to query with your own key for full access.
+# notebook runs out-of-the-box with no signup. For full data the Aperiodic team
+# provisions a key for you (factors.aperiodic.io/booking); once you have it,
+# export APERIODIC_API_KEY (or set it in a .env file).
 DEMO_API_KEY = "DEMO-KEY"
 CATALOG_URL = "https://factors.aperiodic.io/catalog.json"
 

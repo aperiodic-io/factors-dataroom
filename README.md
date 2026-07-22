@@ -20,7 +20,13 @@ a correlation heatmap across every factor's portfolio returns, computed from the
 raw factor data — a quick read on how the individual factors relate to one another.
 
 The factors are meant to be combined into multi-factor portfolios — see how you
-can do that in [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb).
+can do that in [Multi-Factor Portfolio Construction](notebooks/00_multi_factor_portfolio_construction.ipynb),
+whose default parameters reconstruct the **7 Factor Composite (AF-COMP)**. To see
+what folding one more factor into an existing multi-factor book does, see
+[Portfolio Integration](notebooks/00_portfolio_integration.ipynb): it builds the
+book the same way, then reports the added factor's correlation to it and the
+before/after performance — by default a small two-factor book plus a lowly
+correlated third factor (**Instantaneous Volatility**).
 
 Each factor links to its detail page on our site, a PDF factsheet, the
 AlphaLens notebook, and the underlying data (returns and raw factor data):
@@ -63,9 +69,11 @@ against a shared public demo key, so no signup or configuration is required.
 `requirements.txt` installs the client straight from PyPI
 ([`aperiodic-factors`](https://pypi.org/project/aperiodic-factors/)).
 
-For full (non-preview) data, sign up at
-[factors.aperiodic.io](https://factors.aperiodic.io), generate an API key in
-your API settings, and make it available to the notebooks:
+For full (non-preview) data, get in touch with the Aperiodic team to be
+onboarded — we provision an API key for you (there is no self-serve signup).
+Book an intro at
+[factors.aperiodic.io/booking](https://factors.aperiodic.io/booking). Once you
+have a key, make it available to the notebooks:
 
 ```bash
 export APERIODIC_API_KEY="your_api_key_here"   # or put it in a .env file
