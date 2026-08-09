@@ -89,6 +89,7 @@ jobs:
           echo; echo "Previews:"; ls -lh notebooks/preview || true
 
       - name: Upload artefacts
+        if: false
         uses: actions/upload-artifact@v4
         with:
           name: factsheets
