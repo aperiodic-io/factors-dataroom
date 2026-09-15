@@ -74,7 +74,7 @@ jobs:
             echo "factors=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Export CSVs (returns + factor data)
+      - name: Export portfolio-return CSVs
         run: python -m scripts.export_data ${{ steps.scope.outputs.factors }}
 
       - name: Generate PDF factsheets
@@ -83,7 +83,6 @@ jobs:
       - name: Show generated artefacts
         run: |
           echo "Returns:"; ls -lh data/portfolio-40-returns || true
-          echo; echo "Factor data:"; ls -lh data/raw-factors || true
           echo; echo "Factor analysis:"; ls -lh .internal/factor-analysis || true
           echo; echo "Factsheets:"; ls -lh factsheets || true
           echo; echo "Previews:"; ls -lh notebooks/preview || true
@@ -95,7 +94,6 @@ jobs:
           name: factsheets
           path: |
             data/portfolio-40-returns
-            data/raw-factors
             .internal/factor-analysis
             factsheets
             notebooks/preview
