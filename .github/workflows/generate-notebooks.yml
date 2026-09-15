@@ -1,32 +1,9 @@
 name: Generate Notebooks
 
 on:
+  # Notebook generation/execution is intentionally manual. Keep the notebooks
+  # stable unless a maintainer explicitly dispatches this workflow.
   workflow_dispatch:
-
-  schedule:
-    - cron: '0 6 * * 1'
-
-  # Regenerate + execute the notebooks whenever a generation *input* changes.
-  # On main this opens a refresh PR (see the create-pull-request step below); on
-  # any other branch it commits the executed notebooks straight back to that
-  # branch, updating its PR. Scoped to the inputs: the generated notebooks'
-  # sources (notebooks/src, scripts, deps) plus the two hand-maintained notebooks,
-  # whose source lives in the .ipynb itself so an edit to one must re-execute it.
-  # A data-only or factsheet commit touches none of these paths, so it doesn't
-  # rebuild the notebooks. The workflow's own commit-back can't loop even though
-  # it now touches push-path files: it is pushed with GITHUB_TOKEN, whose pushes
-  # never start a new workflow run.
-  push:
-    branches:
-      - '**'
-      - '!automation/**'
-    paths:
-      - 'notebooks/src/**'
-      - 'notebooks/00_multi_factor_portfolio_construction.ipynb'
-      - 'notebooks/00_portfolio_integration.ipynb'
-      - 'scripts/**'
-      - 'requirements.txt'
-      - '.github/workflows/generate-notebooks.yml'
 
 permissions:
   contents: write
@@ -172,8 +149,8 @@ jobs:
 
       - name: Open PR with refreshed notebooks
         id: cpr
-        # Only on main: a refresh there lands via PR (schedule auto-merges it
-        # below). Feature branches never reach here -- they commit back above.
+        # Only manual runs on main open a refresh PR. Feature branches commit
+        # executed notebooks directly back to that branch.
         if: ${{ success() && github.ref_name == 'main' }}
         uses: peter-evans/create-pull-request@v6
         with:
@@ -188,15 +165,5 @@ jobs:
 
             Trigger: `${{ github.event_name }}`.
 
-            Scheduled runs auto-merge once branch-protection requirements are
-            met; for manual / `main` triggers, review the diff and merge.
+            Review the diff and merge when ready.
           delete-branch: true
-
-      - name: Auto-merge the scheduled refresh
-        if: ${{ github.event_name == 'schedule' && steps.cpr.outputs.pull-request-number }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ steps.cpr.outputs.pull-request-number }}
-        run: |
-          gh pr merge "$PR" --squash --delete-branch --auto \
-            || gh pr merge "$PR" --squash --delete-branch

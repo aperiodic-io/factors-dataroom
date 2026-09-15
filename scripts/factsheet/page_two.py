@@ -70,28 +70,6 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
         va="top",
         family=theme.display_font(),
     )
-    # Secondary CTA vertically centred on the rendered title glyphs — measure
-    # the real text bbox so it doesn't drift with font metrics. Direct
-    # download of the raw factor-data CSV referenced in the body copy below.
-    renderer = fig.canvas.get_renderer()
-    inv = fig.transFigure.inverted()
-    tbox = title.get_window_extent(renderer)
-    (_, ty0) = inv.transform((tbox.x0, tbox.y0))
-    (_, ty1) = inv.transform((tbox.x0, tbox.y1))
-    title_mid = (ty0 + ty1) / 2.0
-    csv_btn_w = 0.235
-    csv_btn_h = 0.022
-    draw_link_button(
-        fig,
-        RIGHT_X - csv_btn_w,
-        title_mid - csv_btn_h / 2.0,
-        csv_btn_w,
-        "Download Factor Data (CSV)",
-        factor.factor_data_csv_url,
-        primary=False,
-        height=csv_btn_h,
-        fontsize=7.5,
-    )
     _render_justified_block(
         fig,
         x_frac=MARGIN_X,
@@ -103,8 +81,7 @@ def _draw_header(fig: plt.Figure, factor: Factor, page: int) -> None:
             "whether the signal cross-sectionally separates out- from "
             "under-performers, and how consistently. Computed "
             f"point-in-time on the rolling Top {factor.default_universe} "
-            "universe (the live factor spans many more tokens — see the "
-            "raw factor-data CSV in the data room)."
+            "universe (the live factor spans many more tokens)."
         ),
         fontsize=9.5,
         color=theme.SUB_INK,

@@ -237,13 +237,12 @@ def _factor_table(factors: list[Factor]) -> str:
         f"| [{f.name}]({f.detail_url}) "
         f"| [PDF](factsheets/{f.id}.pdf) "
         f"| [notebook](notebooks/factor_analysis_{f.id}.ipynb) "
-        f"| [CSV]({f.factor_data_csv_url}) "
         f"| [CSV]({f.returns_csv_url}) |"
         for f in factors
     )
     return (
-        "| Factor | Factsheet | Notebook | Raw factor data | Portfolio returns |\n"
-        "| --- | --- | --- | --- | --- |\n"
+        "| Factor | Factsheet | Notebook | Portfolio returns |\n"
+        "| --- | --- | --- | --- |\n"
         f"{rows}"
     )
 
