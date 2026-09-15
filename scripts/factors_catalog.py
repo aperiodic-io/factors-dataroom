@@ -50,10 +50,6 @@ class Factor:
         return f"{GITHUB_RAW_BASE}/data/portfolio-40-returns/{self.id}.csv"
 
     @property
-    def factor_data_csv_url(self) -> str:
-        return f"{GITHUB_RAW_BASE}/data/raw-factors/{self.id}.csv"
-
-    @property
     def has_factor_notebook(self) -> bool:
         return (
             REPO_ROOT / "notebooks" / f"factor_analysis_{self.id}.ipynb"

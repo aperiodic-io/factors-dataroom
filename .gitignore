@@ -1,4 +1,5 @@
 .env
+data/raw-factors/
 ci-artifacts/
 __pycache__/**
 *.pyc
